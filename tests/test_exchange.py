@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from exchange import Account
-from exchange import Broker
+from prophet.exchange import Account
+from prophet.exchange import Broker
 
 
 class TestAccount(TestCase):

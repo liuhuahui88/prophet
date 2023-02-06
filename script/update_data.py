@@ -1,17 +1,19 @@
-import data_spider
-import data_storage
 import time
 import os
 
+from prophet.data_spider import *
+from prophet.data_storage import *
+
+
 if __name__ == '__main__':
 
-    name_file_path = 'data/chinese_stock_codes.csv'
-    history_dir_path = 'data/history_temp'
+    name_file_path = '../data/chinese_stock_codes.csv'
+    history_dir_path = '../data/history_temp'
 
     interval_in_seconds = 3
 
-    spider = data_spider.StockDataSpider()
-    storage = data_storage.StockDataStorage(name_file_path, history_dir_path)
+    spider = StockDataSpider()
+    storage = StockDataStorage(name_file_path, history_dir_path)
 
     codes = storage.get_codes()
     num_of_codes = len(codes)
