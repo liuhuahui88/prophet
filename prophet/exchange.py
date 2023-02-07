@@ -3,7 +3,9 @@ from __future__ import annotations
 
 class Account:
 
-    def __init__(self, cash=0, capitals={}):
+    def __init__(self, cash=0, capitals=None):
+        if capitals is None:
+            capitals = dict()
         self.__cash = cash
         self.__capitals = capitals
 
