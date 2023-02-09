@@ -21,12 +21,12 @@ if __name__ == '__main__':
         code = codes[i]
         name = storage.get_name(code)
 
-        print('processing {}/{} : {} {}'.format(i + 1, num_of_codes, code, name))
+        print('{}/{} : {}'.format(i + 1, num_of_codes, [code, name]))
 
         df = spider.crawl(code)
 
         if df.shape[0] == 0:
-            err_msg = "records not exist"
+            err_msg = "no record"
             print(err_msg)
             os.system("say '{}'".format(err_msg))
 
