@@ -9,7 +9,6 @@ class StockDataSpider:
         ticker = yf.Ticker(code)
         df = ticker.history(period='max')
         df = df.reset_index()
-        df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
         df['Date'] = df['Date'].apply(lambda x: x.date())
         return df
 
