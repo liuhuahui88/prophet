@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-
 class Account:
 
     def __init__(self, cash=0, capitals=None):
@@ -48,32 +45,46 @@ class Account:
             raise ValueError('negative amount of {0} is invalid: {1}'.format(name, amount))
 
 
-class Broker:
+class Liquidity:
 
-    def __init__(self, commission_rate=0, slippage=0):
-        self.__commission_rate = commission_rate
+    def __init__(self, price=0, slippage=0, has_ask=True, has_bid=True):
+        self.__price = price
+        self.__has_ask = has_ask
+        self.__has_bid = has_bid
         self.__slippage = slippage
 
-    def trade(self, account, prices, capital_id, volume):
-        price = prices.get(capital_id, 0)
-        slipped_price = price + self.__slippage * (1 if volume >= 0 else -1)
+    def get_price(self, volume=0):
+        if volume > 0:
+            return self.__price + self.__slippage if self.__has_ask else float('inf')
+        elif volume < 0:
+            return self.__price - self.__slippage if self.__has_bid else 0
+        else:
+            return self.__price
 
-        capital_value = slipped_price * volume
-        commission = abs(capital_value) * self.__commission_rate
 
-        account.add_cash(-(capital_value + commission))
+class Broker:
+
+    def __init__(self, commission_rate=0):
+        self.__commission_rate = commission_rate
+
+    def trade(self, account, capital_id, volume, price):
+        cost = volume * price
+        commission = abs(cost) * self.__commission_rate
+
+        account.add_cash(-(cost + commission))
         account.add_capital(capital_id, volume)
 
 
 class Context:
 
-    def __init__(self, broker: Broker, account: Account, prices: dict):
+    def __init__(self, broker: Broker, account: Account, liquidities: dict):
         self.broker = broker
         self.account = account
-        self.prices = prices
+        self.liquidities = liquidities
 
     def trade(self, capital_id, volume):
-        self.broker.trade(self.account, self.prices, capital_id, volume)
+        price = self.liquidities[capital_id].get_price(volume)
+        self.broker.trade(self.account, capital_id, volume, price)
 
 
 class Agent:
@@ -83,8 +94,9 @@ class Agent:
 
     def handle(self, ctx: Context):
         cash = ctx.account.get_cash()
-        price = ctx.prices.get(self.capital_id, 0)
-        if price != 0:
+        liquidity = ctx.liquidities[self.capital_id]
+        price = liquidity.get_price(1)
+        if price != 0 and price != float('inf'):
             volume = int(cash / price)
             ctx.trade(self.capital_id, volume)
 
@@ -100,6 +112,6 @@ class Exchange:
         self.broker = broker
         self.account = account
 
-    def broadcast(self, prices):
-        self.agent.handle(Context(self.broker, self.account, prices))
+    def broadcast(self, liquidities):
+        self.agent.handle(Context(self.broker, self.account, liquidities))
 

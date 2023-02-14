@@ -67,15 +67,25 @@ class BackTester:
 
         evaluator = Evaluator()
 
-        prices = {code: history_df.loc[0].Close}
+        prices = self.__create_prices(code, history_df, 0)
         evaluator.feed(self.__calculate_value(account, prices))
 
-        for i in history_df.index:
-            prices = {code: history_df.loc[i].Close}
-            exchange.broadcast(prices)
+        for i in range(len(history_df)):
+            liquidities = self.__create_liquidities(code, history_df, i)
+            exchange.broadcast(liquidities)
+
+            prices = self.__create_prices(code, history_df, i)
             evaluator.feed(self.__calculate_value(account, prices))
 
         return evaluator
+
+    @staticmethod
+    def __create_prices(code, history: pd.DataFrame, idx):
+        return {code: history.loc[idx].Close}
+
+    @staticmethod
+    def __create_liquidities(code, history: pd.DataFrame, idx):
+        return {code: Liquidity(history.loc[idx].Close)}
 
     @staticmethod
     def __calculate_value(account: Account, prices: dict):

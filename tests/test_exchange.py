@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from prophet.exchange import Account
+from prophet.exchange import Liquidity
 from prophet.exchange import Broker
 from prophet.exchange import Agent
 from prophet.exchange import Context
@@ -34,21 +35,38 @@ class TestAccount(TestCase):
         self.assertEqual(account.get_capital(self.capital_id), 300)
 
 
+class TestLiquidity(TestCase):
+
+    def test_get_price(self):
+        liquidity = Liquidity(100, slippage=1)
+        self.assertEqual(liquidity.get_price(0), 100)
+        self.assertEqual(liquidity.get_price(1), 101)
+        self.assertEqual(liquidity.get_price(-1), 99)
+
+        no_ask_liquidity = Liquidity(100, has_ask=False)
+        self.assertEqual(no_ask_liquidity.get_price(0), 100)
+        self.assertEqual(no_ask_liquidity.get_price(1), float('inf'))
+        self.assertEqual(no_ask_liquidity.get_price(-1), 100)
+
+        no_bid_liquidity = Liquidity(100, has_bid=False)
+        self.assertEqual(no_bid_liquidity.get_price(0), 100)
+        self.assertEqual(no_bid_liquidity.get_price(1), 100)
+        self.assertEqual(no_bid_liquidity.get_price(-1), 0)
+
+
 class TestBroker(TestCase):
 
     def test_trade(self):
-        broker = Broker(0.1, 5)
+        broker = Broker(0.1)
 
         account = Account(1000)
         capital_id = '600000'
-        prices = {capital_id: 15}
-        volume = 20
 
-        broker.trade(account, prices, capital_id, volume)
+        broker.trade(account, capital_id, 20, 20)
         self.assertEqual(account.get_cash(), 560)
 
-        broker.trade(account, prices, capital_id, -volume)
-        self.assertEqual(account.get_cash(), 740)
+        broker.trade(account, capital_id, -20, 20)
+        self.assertEqual(account.get_cash(), 920)
 
 
 class TestAgent(TestCase):
@@ -60,11 +78,11 @@ class TestAgent(TestCase):
         broker = Broker()
         account = Account(1000)
 
-        agent.handle(Context(broker, account, {capital_id: 300}))
+        agent.handle(Context(broker, account, {capital_id: Liquidity(300)}))
         self.assertEqual(account.get_cash(), 100)
         self.assertEqual(account.get_capital(capital_id), 3)
 
-        agent.handle(Context(broker, account, {capital_id: 30}))
+        agent.handle(Context(broker, account, {capital_id: Liquidity(30)}))
         self.assertEqual(account.get_cash(), 10)
         self.assertEqual(account.get_capital(capital_id), 6)
 
@@ -78,6 +96,6 @@ class TestExchange(TestCase):
 
         exchange.register(Agent(capital_id), Broker(), Account(1000))
 
-        exchange.broadcast({capital_id: 100})
+        exchange.broadcast({capital_id: Liquidity(100)})
         self.assertEqual(exchange.account.get_cash(), 0)
         self.assertEqual(exchange.account.get_capital(capital_id), 10)
