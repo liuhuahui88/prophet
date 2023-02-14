@@ -1,5 +1,5 @@
 *.DS_Store
-.idea/
-data/
-venv/
-__pycache__/
+/.idea/
+/data/
+/venv/
+__pycache__
