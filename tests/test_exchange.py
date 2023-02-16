@@ -3,9 +3,6 @@ from unittest import TestCase
 from prophet.exchange import Account
 from prophet.exchange import Liquidity
 from prophet.exchange import Broker
-from prophet.exchange import Agent
-from prophet.exchange import Context
-from prophet.exchange import Exchange
 
 
 class TestAccount(TestCase):
@@ -67,35 +64,3 @@ class TestBroker(TestCase):
 
         broker.trade(account, capital_id, -20, 20)
         self.assertEqual(account.get_cash(), 920)
-
-
-class TestAgent(TestCase):
-
-    def test_handle(self):
-        capital_id = '600000'
-
-        agent = Agent(capital_id)
-        broker = Broker()
-        account = Account(1000)
-
-        agent.handle(Context(broker, account, {capital_id: Liquidity(300)}))
-        self.assertEqual(account.get_cash(), 100)
-        self.assertEqual(account.get_capital(capital_id), 3)
-
-        agent.handle(Context(broker, account, {capital_id: Liquidity(30)}))
-        self.assertEqual(account.get_cash(), 10)
-        self.assertEqual(account.get_capital(capital_id), 6)
-
-
-class TestExchange(TestCase):
-
-    def test(self):
-        exchange = Exchange()
-
-        capital_id = '600000'
-
-        exchange.register(Agent(capital_id), Broker(), Account(1000))
-
-        exchange.broadcast({capital_id: Liquidity(100)})
-        self.assertEqual(exchange.account.get_cash(), 0)
-        self.assertEqual(exchange.account.get_capital(capital_id), 10)

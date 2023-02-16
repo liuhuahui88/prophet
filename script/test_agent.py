@@ -1,4 +1,5 @@
 from prophet.back_tester import *
+from prophet.agent.buy_and_hold_agent import *
 
 
 if __name__ == '__main__':
@@ -10,6 +11,6 @@ if __name__ == '__main__':
     code = '605599'
     name = stock_db.get_name(code)
 
-    evaluator = bt.back_test(Agent(code), Account(1000000), code)
+    evaluator = bt.back_test(BuyAndHoldAgent(code), Account(1000000), code)
 
     print('{} : {}'.format([code, name], evaluator))
