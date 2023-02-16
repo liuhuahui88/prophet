@@ -1,5 +1,5 @@
-from prophet.data_storage import *
-from prophet.data_validator import *
+from prophet.data.data_storage import *
+from prophet.data.data_validator import *
 
 
 if __name__ == '__main__':

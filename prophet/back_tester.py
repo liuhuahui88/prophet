@@ -1,6 +1,6 @@
 import numpy as np
 
-from prophet.data_storage import *
+from prophet.data.data_storage import *
 from prophet.exchange import *
 from prophet.agent.abstract_agent import *
 

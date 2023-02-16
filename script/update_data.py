@@ -1,8 +1,8 @@
 import time
 import os
 
-from prophet.data_spider import *
-from prophet.data_storage import *
+from prophet.data.data_spider import *
+from prophet.data.data_storage import *
 
 
 if __name__ == '__main__':
