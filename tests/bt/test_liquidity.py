@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from prophet.exchange import *
+from prophet.bt.liquidity import *
 
 
 class TestLiquidity(TestCase):
@@ -20,18 +20,3 @@ class TestLiquidity(TestCase):
         self.assertEqual(no_bid_liquidity.get_price(0), 100)
         self.assertEqual(no_bid_liquidity.get_price(1), 100)
         self.assertEqual(no_bid_liquidity.get_price(-1), 0)
-
-
-class TestBroker(TestCase):
-
-    def test_trade(self):
-        broker = Broker(0.1)
-
-        account = Account(1000)
-        capital_id = '600000'
-
-        broker.trade(account, capital_id, 20, 20)
-        self.assertEqual(account.get_cash(), 560)
-
-        broker.trade(account, capital_id, -20, 20)
-        self.assertEqual(account.get_cash(), 920)

@@ -1,4 +1,4 @@
-from prophet.back_tester import *
+from prophet.bt.back_tester import *
 from prophet.agent.buy_and_hold_agent import *
 
 

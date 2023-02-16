@@ -1,7 +1,8 @@
 from prophet.data.data_storage import *
-from prophet.exchange import *
 from prophet.agent.abstract_agent import *
 from prophet.utils.evaluator import *
+from prophet.bt.broker import *
+from prophet.bt.liquidity import *
 
 
 class BackTester:
