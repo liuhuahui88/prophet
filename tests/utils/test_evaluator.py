@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from prophet.back_tester import Evaluator
+from prophet.utils.evaluator import Evaluator
 
 
 class TestEvaluator(TestCase):
