@@ -77,8 +77,8 @@ class BackTester:
 
     @staticmethod
     def __create_prices(code, history: pd.DataFrame, idx):
-        return {code: history.loc[idx].Close}
+        return {code: history.iloc[idx].Close}
 
     @staticmethod
     def __create_liquidities(code, history: pd.DataFrame, idx):
-        return {code: Liquidity(history.loc[idx].Close)}
+        return {code: Liquidity(history.iloc[idx].Close)}
