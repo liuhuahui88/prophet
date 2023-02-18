@@ -35,8 +35,7 @@ class BackTester:
             self.agent = agent
             self.broker = broker
             self.account = Account(init_cash)
-            self.evaluator = Evaluator()
-            self.evaluator.feed(init_cash)
+            self.evaluator = Evaluator(init_cash)
 
         def handle(self, prices, liquidities):
             ctx = self.create_agent_context(prices, liquidities)

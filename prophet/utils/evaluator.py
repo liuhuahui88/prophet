@@ -3,8 +3,10 @@ import numpy as np
 
 class Evaluator:
 
-    def __init__(self):
+    def __init__(self, init_value=None):
         self.values = []
+        if init_value is not None:
+            self.values = [init_value]
 
     def feed(self, value):
         self.values.append(value)
