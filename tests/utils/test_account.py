@@ -23,6 +23,9 @@ class TestAccount(TestCase):
         self.assertEqual(account.get_capitals(), {})
         self.assertEqual(account.get_capital(self.capital_id), 0)
 
+        account.set_capital(self.capital_id, 0)
+        self.assertEqual(account.get_capital(self.capital_id), 0)
+
         account.set_capital(self.capital_id, 100)
         self.assertEqual(account.get_capital(self.capital_id), 100)
 

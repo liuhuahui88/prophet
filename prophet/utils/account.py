@@ -25,7 +25,7 @@ class Account:
 
     def set_capital(self, capital_id, amount):
         self.__validate_amount('capital', amount)
-        if amount == 0:
+        if amount == 0 and capital_id in self.__capitals:
             del self.__capitals[capital_id]
         else:
             self.__capitals[capital_id] = amount
