@@ -7,24 +7,56 @@ from prophet.bt.liquidity import *
 
 class BackTester:
 
-    def __init__(self, broker: Broker, stock_db: StockDataStorage):
-        self.broker = broker
+    def __init__(self, stock_db: StockDataStorage, broker: Broker, init_cash=1000000):
         self.stock_db = stock_db
+        self.broker = broker
+        self.init_cash = init_cash
+        self.agents = {}
 
-    def back_test(self, agent: Agent, account: Account, code: str):
-        history_df = self.stock_db.load_history(code)
+    def register(self, name: str, agent: Agent):
+        self.agents[name] = agent
 
-        evaluator = Evaluator()
-        prices = self.__create_prices(code, history_df, 0)
-        evaluator.feed(self.__calculate_value(account, prices))
+    def back_test(self, code: str):
+        df = self.stock_db.load_history(code)
+        cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 
-        for i in range(len(history_df)):
-            prices = self.__create_prices(code, history_df, i)
-            liquidities = self.__create_liquidities(code, history_df, i)
-            agent.handle(BackTester.AgentContext(account, prices, self.broker, liquidities))
-            evaluator.feed(self.__calculate_value(account, prices))
+        for i in range(len(df)):
+            prices = self.__create_prices(code, df, i)
+            liquidities = self.__create_liquidities(code, df, i)
+            for case in cases:
+                case.handle(prices, liquidities)
 
-        return evaluator
+        return cases
+
+    class TestCase:
+
+        def __init__(self, name, agent, broker, init_cash):
+            self.name = name
+            self.agent = agent
+            self.broker = broker
+            self.account = Account(init_cash)
+            self.evaluator = Evaluator()
+            self.evaluator.feed(init_cash)
+
+        def handle(self, prices, liquidities):
+            ctx = self.create_agent_context(prices, liquidities)
+            self.agent.handle(ctx)
+
+            value = self.calculate_account_value(prices)
+            self.evaluator.feed(value)
+
+        def create_agent_context(self, prices: dict, liquidities: dict):
+            return BackTester.AgentContext(self.account, prices, self.broker, liquidities)
+
+        def calculate_account_value(self, prices: dict):
+            cash_value = self.account.get_cash()
+
+            capital_value = 0
+            for capital_id in prices.keys():
+                capital_value += prices.get(capital_id) * self.account.get_capital(capital_id)
+
+            value = cash_value + capital_value
+            return value
 
     class AgentContext(Agent.Context):
 
@@ -51,18 +83,3 @@ class BackTester:
     @staticmethod
     def __create_liquidities(code, history: pd.DataFrame, idx):
         return {code: Liquidity(history.loc[idx].Close)}
-
-    @staticmethod
-    def __create_agent_context(account: Account, prices: dict, broker: Broker, liquidities: dict):
-        return BackTester.AgentContext(account, prices, broker, liquidities)
-
-    @staticmethod
-    def __calculate_value(account: Account, prices: dict):
-        cash_value = account.get_cash()
-
-        capital_value = 0
-        for capital_id in prices.keys():
-            capital_value += prices.get(capital_id) * account.get_capital(capital_id)
-
-        value = cash_value + capital_value
-        return value
