@@ -17,15 +17,11 @@ class TestEvaluator(TestCase):
         self.assertAlmostEqual(evaluator.get_gain_std(), 2.0, 2)
 
     def test_sharp_ratio(self):
-        self.__feed_and_check_sharp_ratio([100, 100, 100], 1.000)
+        self.__feed_and_check_sharp_ratio([100, 100, 400], 2.718)
+        self.__feed_and_check_sharp_ratio([100, 400, 400], 2.718)
 
-        self.__feed_and_check_sharp_ratio([100, 200, 400], 2.000)
-
-        self.__feed_and_check_sharp_ratio([100, 100, 400], 1.500)
-        self.__feed_and_check_sharp_ratio([100, 400, 400], 1.500)
-
-        self.__feed_and_check_sharp_ratio([100, 50, 400], 1.250)
-        self.__feed_and_check_sharp_ratio([100, 800, 400], 1.250)
+        self.__feed_and_check_sharp_ratio([100, 50, 400], 1.649)
+        self.__feed_and_check_sharp_ratio([100, 800, 400], 1.649)
 
     def __feed_and_check_sharp_ratio(self, values, expected_sharp_ratio):
         evaluator = Evaluator()

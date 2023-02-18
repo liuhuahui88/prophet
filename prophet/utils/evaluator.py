@@ -25,7 +25,7 @@ class Evaluator:
         return np.exp(np.std(log_gains))
 
     def get_sharp_ratio(self):
-        return 1 + (self.get_gain_avg() - 1) / self.get_gain_std()
+        return np.exp(np.log(self.get_gain_avg()) / np.log(self.get_gain_std()))
 
     def get_worst_drawdown(self):
         worst_drawdown = 1
