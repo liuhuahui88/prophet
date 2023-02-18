@@ -6,7 +6,10 @@ import plotly.graph_objects as go
 
 class Figure:
 
-    def __init__(self):
+    def __init__(self, action_name=None, value_names=None):
+        self.action_name = action_name
+        self.value_names = value_names
+
         self.vertical_spacing = 0.05
         self.row_1_height = 0.4
         self.row_2_height = 0.1
@@ -15,7 +18,6 @@ class Figure:
         self.ACTION_BUY = 'B'
         self.ACTION_SELL = 'S'
 
-        self.DEFAULT_VOLUME = 1
         self.DEFAULT_VALUE = 1
         self.DEFAULT_ACTION = self.ACTION_SELL
 
@@ -44,19 +46,19 @@ class Figure:
         self.add_scatter(fig, 1, 1, df, 'Date', 'MA20', 'blue')
 
         # Plot volume on 2nd row
-        self.ensure(df, 'Volume', self.DEFAULT_VOLUME)
         df['VolumeColor'] = np.empty(len(df))
         df.loc[df.Open > df.Close, 'VolumeColor'] = 'green'
         df.loc[df.Open <= df.Close, 'VolumeColor'] = 'red'
         self.add_bar(fig, 2, 1, df, 'Date', 'Volume', 'VolumeColor')
 
         # Plot value on 3rd row
-        self.ensure(df, 'Value', self.DEFAULT_VALUE)
-        self.add_scatter(fig, 3, 1, df, 'Date', 'Value', 'black')
+        if self.value_names is not None:
+            for value_name in self.value_names:
+                self.add_scatter(fig, 3, 1, df, 'Date', value_name)
 
         # Plot action
-        self.ensure(df, 'Action', self.DEFAULT_ACTION)
-        self.add_action(fig, df, 'Date', 'Action')
+        if self.action_name is not None:
+            self.add_action(fig, df, 'Date', self.action_name)
 
         # Hide price rangeslider plot
         fig.update(layout_xaxis_rangeslider_visible=False)
@@ -72,12 +74,12 @@ class Figure:
             df[name] = default_value
 
     @staticmethod
-    def add_scatter(fig, row, col, df, x_name, y_name, color='black'):
+    def add_scatter(fig, row, col, df, x_name, y_name, color=None):
         scatter = go.Scatter(x=df[x_name], y=df[y_name], name=y_name, marker=dict(color=color))
         fig.add_trace(scatter, row=row, col=col)
 
     @staticmethod
-    def add_bar(fig, row, col, df, x_name, y_name, color_name=None, color='black'):
+    def add_bar(fig, row, col, df, x_name, y_name, color_name=None, color=None):
         marker = dict(color=df[color_name] if color_name is not None else color)
         bar = go.Bar(x=df[x_name], y=df[y_name], name=y_name, marker=marker)
         fig.add_trace(bar, row=row, col=col)
