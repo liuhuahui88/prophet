@@ -1,5 +1,6 @@
 from prophet.bt.back_tester import *
 from prophet.agent.buy_and_hold_agent import *
+from prophet.agent.buy_and_sell_agent import *
 from prophet.utils.figure import *
 
 
@@ -11,7 +12,8 @@ if __name__ == '__main__':
     code = '605599'
     name = stock_db.get_name(code)
 
-    bt.register('Base', BuyAndHoldAgent(code))
+    bt.register('B&H', BuyAndHoldAgent(code))
+    bt.register('B&S', BuyAndSellAgent(code))
 
     cases = bt.back_test(code)
 
