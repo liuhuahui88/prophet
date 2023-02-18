@@ -21,7 +21,7 @@ class Figure:
         self.DEFAULT_VALUE = 1
         self.DEFAULT_ACTION = self.ACTION_SELL
 
-    def plot(self, df: pd.DataFrame, start_date=None, end_date=None):
+    def plot(self, df: pd.DataFrame, title='UNKNOWN', start_date=None, end_date=None):
         # Select record from start date to end date
         if start_date is not None:
             df = df[df.Date >= start_date]
@@ -31,7 +31,7 @@ class Figure:
         # Create subplots and mention plot grid size
         fig = sp.make_subplots(shared_xaxes=True, rows=3, cols=1,
                                vertical_spacing=self.vertical_spacing,
-                               subplot_titles=['Price', 'Volume', 'Value'],
+                               subplot_titles=[title],
                                row_heights=[self.row_1_height, self.row_2_height, self.row_3_height])
 
         # Plot price on 1st row

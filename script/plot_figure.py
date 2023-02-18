@@ -9,4 +9,4 @@ if __name__ == '__main__':
 
     fig = Figure()
 
-    fig.plot(df, '2022-11-01', '2023-01-01')
+    fig.plot(df, start_date='2022-11-01', end_date='2023-01-01')
