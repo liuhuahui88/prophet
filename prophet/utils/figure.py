@@ -37,14 +37,6 @@ class Figure:
         # Plot price on 1st row
         self.add_candle_stick(fig, 1, 1, df, 'Date', 'Open', 'High', 'Low', 'Close')
 
-        # Plot MA(n) on 1st row
-        df['MA5'] = df['Close'].rolling(5).mean()
-        df['MA10'] = df['Close'].rolling(10).mean()
-        df['MA20'] = df['Close'].rolling(20).mean()
-        self.add_scatter(fig, 1, 1, df, 'Date', 'MA5', 'red')
-        self.add_scatter(fig, 1, 1, df, 'Date', 'MA10', 'green')
-        self.add_scatter(fig, 1, 1, df, 'Date', 'MA20', 'blue')
-
         # Plot volume on 2nd row
         df['VolumeColor'] = np.empty(len(df))
         df.loc[df.Open > df.Close, 'VolumeColor'] = 'green'
