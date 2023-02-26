@@ -24,12 +24,8 @@ class OracleAgent(Agent):
             next_close = self.df['NextClose'].iloc[self.index]
 
             if close > next_close:
-                volume = ctx.get_account().get_capital(self.capital_id)
-                ctx.trade(self.capital_id, -volume)
+                ctx.ask(self.capital_id)
             else:
-                cash = ctx.get_account().get_cash()
-                price = ctx.get_prices()[self.capital_id]
-                volume = int(cash / price)
-                ctx.trade(self.capital_id, volume)
+                ctx.bid(self.capital_id)
 
         self.index += 1

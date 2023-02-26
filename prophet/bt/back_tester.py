@@ -71,9 +71,20 @@ class BackTester:
         def get_prices(self):
             return self.__prices
 
-        def trade(self, capital_id, volume):
-            price = self.__liquidities[capital_id].get_price(volume)
-            self.__broker.trade(self.__account, capital_id, volume, price)
+        def bid(self, capital_id, cash=float('inf'), price=float('inf')):
+            cash = min(cash, self.__account.get_cash())
+            cash = cash - self.__broker.calculate_commission(cash)
+
+            volume, cash = self.__liquidities[capital_id].bid(cash, price)
+            if volume != 0:
+                self.__broker.trade(self.__account, capital_id, volume, -cash)
+
+        def ask(self, capital_id, volume=float('inf'), price=0):
+            volume = min(volume, self.__account.get_capital(capital_id))
+
+            volume, cash = self.__liquidities[capital_id].ask(volume, price)
+            if volume != 0:
+                self.__broker.trade(self.__account, capital_id, -volume, cash)
 
     @staticmethod
     def __create_prices(code, history: pd.DataFrame, idx):
