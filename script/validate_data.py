@@ -10,11 +10,11 @@ if __name__ == '__main__':
 
     storage = StockDataStorage(name_file_path, history_dir_path)
 
-    for code in storage.get_codes():
-        name = storage.get_name(code)
-        history = storage.load_history(code)
-        summary = validator.validate(code, history)
+    for symbol in storage.get_symbols():
+        name = storage.get_name(symbol)
+        history = storage.load_history(symbol)
+        summary = validator.validate(symbol, history)
         for description in summary:
             invalid_results = summary[description]
             for r in invalid_results:
-                print([code, name], description, r)
+                print([symbol, name], description, r)

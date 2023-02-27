@@ -4,19 +4,19 @@ import yfinance as yf
 class StockDataSpider:
 
     @classmethod
-    def crawl(cls, code):
-        code = StockDataSpider.__transform_code(code)
-        ticker = yf.Ticker(code)
+    def crawl(cls, symbol):
+        symbol = StockDataSpider.__transform_symbol(symbol)
+        ticker = yf.Ticker(symbol)
         df = ticker.history(period='max')
         df = df.reset_index()
         df['Date'] = df['Date'].apply(lambda x: x.date())
         return df
 
     @staticmethod
-    def __transform_code(code):
-        if code[0] == '6':
-            return code + ".SS"
-        elif code[0] == '3' or code[0] == '0':
-            return code + ".SZ"
+    def __transform_symbol(symbol):
+        if symbol[0] == '6':
+            return symbol + ".SS"
+        elif symbol[0] == '3' or symbol[0] == '0':
+            return symbol + ".SZ"
         else:
-            raise ValueError('{0} is an invalid code'.format(code))
+            raise ValueError('{0} is an invalid symbol'.format(symbol))

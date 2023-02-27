@@ -6,10 +6,10 @@ class OracleAgent(Agent):
 
     CASH_MULTIPLIER = 1000
 
-    def __init__(self, capital_id, ds: StockDataStorage, window_size):
-        self.capital_id = capital_id
+    def __init__(self, symbol, ds: StockDataStorage, window_size):
+        self.symbol = symbol
 
-        self.df = ds.load_history(capital_id)
+        self.df = ds.load_history(symbol)
         self.df['NextClose'] = self.df['Close'].rolling(window_size).median().shift(-window_size)
 
         self.index = 0
@@ -24,8 +24,8 @@ class OracleAgent(Agent):
             next_close = self.df['NextClose'].iloc[self.index]
 
             if close > next_close:
-                ctx.ask(self.capital_id)
+                ctx.ask(self.symbol)
             else:
-                ctx.bid(self.capital_id)
+                ctx.bid(self.symbol)
 
         self.index += 1

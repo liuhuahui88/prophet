@@ -15,21 +15,21 @@ if __name__ == '__main__':
     spider = StockDataSpider()
     storage = StockDataStorage(name_file_path, history_dir_path)
 
-    codes = storage.get_codes()
-    num_of_codes = len(codes)
-    for i in range(num_of_codes):
-        code = codes[i]
-        name = storage.get_name(code)
+    symbols = storage.get_symbols()
+    num_of_symbols = len(symbols)
+    for i in range(num_of_symbols):
+        symbol = symbols[i]
+        name = storage.get_name(symbol)
 
-        print('{}/{} : {}'.format(i + 1, num_of_codes, [code, name]))
+        print('{}/{} : {}'.format(i + 1, num_of_symbols, [symbol, name]))
 
-        df = spider.crawl(code)
+        df = spider.crawl(symbol)
 
         if df.shape[0] == 0:
             err_msg = "no record"
             print(err_msg)
             os.system("say '{}'".format(err_msg))
 
-        storage.save_history(code, df)
+        storage.save_history(symbol, df)
 
         time.sleep(interval_in_seconds)

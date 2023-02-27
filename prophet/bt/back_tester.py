@@ -16,13 +16,13 @@ class BackTester:
     def register(self, name: str, agent: Agent):
         self.agents[name] = agent
 
-    def back_test(self, code: str):
-        df = self.stock_db.load_history(code)
+    def back_test(self, symbol: str):
+        df = self.stock_db.load_history(symbol)
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 
         for i in range(len(df)):
-            prices = self.__create_prices(code, df, i)
-            liquidities = self.__create_liquidities(code, df, i)
+            prices = self.__create_prices(symbol, df, i)
+            liquidities = self.__create_liquidities(symbol, df, i)
             for case in cases:
                 case.handle(prices, liquidities)
 
@@ -51,8 +51,8 @@ class BackTester:
             cash_value = self.account.get_cash()
 
             capital_value = 0
-            for capital_id in prices.keys():
-                capital_value += prices.get(capital_id) * self.account.get_capital(capital_id)
+            for symbol in prices.keys():
+                capital_value += prices.get(symbol) * self.account.get_volume(symbol)
 
             value = cash_value + capital_value
             return value
@@ -71,25 +71,25 @@ class BackTester:
         def get_prices(self):
             return self.__prices
 
-        def bid(self, capital_id, cash=float('inf'), price=float('inf')):
+        def bid(self, symbol, cash=float('inf'), price=float('inf')):
             cash = min(cash, self.__account.get_cash())
             cash = cash - self.__broker.calculate_commission(cash)
 
-            volume, cash = self.__liquidities[capital_id].bid(cash, price)
+            volume, cash = self.__liquidities[symbol].bid(cash, price)
             if volume != 0:
-                self.__broker.trade(self.__account, capital_id, volume, -cash)
+                self.__broker.trade(self.__account, symbol, volume, -cash)
 
-        def ask(self, capital_id, volume=float('inf'), price=0):
-            volume = min(volume, self.__account.get_capital(capital_id))
+        def ask(self, symbol, volume=float('inf'), price=0):
+            volume = min(volume, self.__account.get_volume(symbol))
 
-            volume, cash = self.__liquidities[capital_id].ask(volume, price)
+            volume, cash = self.__liquidities[symbol].ask(volume, price)
             if volume != 0:
-                self.__broker.trade(self.__account, capital_id, -volume, cash)
+                self.__broker.trade(self.__account, symbol, -volume, cash)
 
     @staticmethod
-    def __create_prices(code, history: pd.DataFrame, idx):
-        return {code: history.iloc[idx].Close}
+    def __create_prices(symbol, history: pd.DataFrame, idx):
+        return {symbol: history.iloc[idx].Close}
 
     @staticmethod
-    def __create_liquidities(code, history: pd.DataFrame, idx):
-        return {code: Liquidity(history.iloc[idx].Close)}
+    def __create_liquidities(symbol, history: pd.DataFrame, idx):
+        return {symbol: Liquidity(history.iloc[idx].Close)}

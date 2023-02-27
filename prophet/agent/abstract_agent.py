@@ -16,11 +16,11 @@ class Agent(ABC):
             pass
 
         @abstractmethod
-        def bid(self, capital_id, cash=float('inf'), price=float('inf')):
+        def bid(self, symbol, cash=float('inf'), price=float('inf')):
             pass
 
         @abstractmethod
-        def ask(self, capital_id, volume=float('inf'), price=0):
+        def ask(self, symbol, volume=float('inf'), price=0):
             pass
 
     @abstractmethod
