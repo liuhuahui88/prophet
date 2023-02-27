@@ -1,3 +1,5 @@
+import math
+
 from prophet.data.data_storage import *
 from prophet.agent.abstract_agent import *
 from prophet.utils.evaluator import *
@@ -92,4 +94,8 @@ class BackTester:
 
     @staticmethod
     def __create_liquidities(symbol, history: pd.DataFrame, idx):
-        return {symbol: Liquidity(history.iloc[idx].Close)}
+        diff = math.log(history.iloc[idx].Close / history.iloc[idx - 1].Close) if idx != 0 else 0
+        threshold = math.log(1.19 if symbol[0] == '3' else 1.09) if idx != 0 else 0
+        has_ask = diff < threshold
+        has_bid = diff > -threshold
+        return {symbol: Liquidity(history.iloc[idx].Close, 0, has_ask, has_bid)}
