@@ -1,5 +1,7 @@
 import math
 
+import pandas as pd
+
 from prophet.data.data_storage import *
 from prophet.agent.abstract_agent import *
 from prophet.utils.evaluator import *
@@ -18,8 +20,9 @@ class BackTester:
     def register(self, name: str, agent: Agent):
         self.agents[name] = agent
 
-    def back_test(self, symbol: str):
-        df = self.stock_db.load_history(symbol)
+    def back_test(self, symbol: str, start_date=None, end_date=None):
+        df = self.__load_history(symbol, start_date, end_date)
+
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 
         for i in range(len(df)):
@@ -29,7 +32,7 @@ class BackTester:
             for case in cases:
                 case.handle(date, prices, liquidities)
 
-        return cases
+        return df, cases
 
     class TestCase:
 
@@ -92,6 +95,15 @@ class BackTester:
             volume, cash = self.__liquidities[symbol].ask(volume, price)
             if volume != 0:
                 self.__broker.trade(self.__account, symbol, -volume, cash)
+
+    def __load_history(self, symbol, start_date, end_date):
+        history = self.stock_db.load_history(symbol)
+        if start_date is not None:
+            history = history[history.Date >= start_date]
+        if end_date is not None:
+            history = history[history.Date < end_date]
+        history = history.reset_index()
+        return history
 
     @staticmethod
     def __create_date(history: pd.DataFrame, idx):

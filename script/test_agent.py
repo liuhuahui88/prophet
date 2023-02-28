@@ -9,15 +9,13 @@ if __name__ == '__main__':
     broker = Broker()
     bt = BackTester(stock_db, broker)
 
-    symbol = '605599'
+    symbol = '600000'
     name = stock_db.get_name(symbol)
 
     bt.register('B&H', BuyAndHoldAgent(symbol))
     bt.register('B&S', BuyAndSellAgent(symbol))
 
-    cases = bt.back_test(symbol)
-
-    df = stock_db.load_history(symbol)
+    df, cases = bt.back_test(symbol, '2014-01-01', '2014-02-01')
 
     value_names = []
     for case in cases:
