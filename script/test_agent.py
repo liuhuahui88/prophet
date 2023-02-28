@@ -1,6 +1,5 @@
+from prophet.agent import *
 from prophet.bt.back_tester import *
-from prophet.agent.buy_and_hold_agent import *
-from prophet.agent.buy_and_sell_agent import *
 from prophet.utils.figure import *
 
 
@@ -13,7 +12,10 @@ if __name__ == '__main__':
     name = stock_db.get_name(symbol)
 
     bt.register('B&H', BuyAndHoldAgent(symbol))
-    bt.register('B&S', BuyAndSellAgent(symbol))
+    bt.register('B&S', BuyAndSellAgent(symbol, False))
+    bt.register('S&B', BuyAndSellAgent(symbol, True))
+    bt.register('MAA', MovingAverageAgent(symbol, 5, 10))
+    bt.register('ORA', OracleAgent(symbol, stock_db, 1))
 
     df, cases = bt.back_test(symbol, '2014-01-01', '2014-02-01')
 
