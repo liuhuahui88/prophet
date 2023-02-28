@@ -5,7 +5,7 @@ from prophet.utils.figure import *
 
 if __name__ == '__main__':
     stock_db = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
-    broker = Broker()
+    broker = Broker(0.01)
     bt = BackTester(stock_db, broker)
 
     symbol = '600000'
@@ -15,9 +15,9 @@ if __name__ == '__main__':
     bt.register('B&S', BuyAndSellAgent(symbol, False))
     bt.register('S&B', BuyAndSellAgent(symbol, True))
     bt.register('MAA', MovingAverageAgent(symbol, 5, 10))
-    bt.register('ORA', OracleAgent(symbol, stock_db, 1))
+    bt.register('ORA', OracleAgent(symbol, stock_db, 0.99 / 1.01))
 
-    df, cases = bt.back_test(symbol, '2014-01-01', '2014-02-01')
+    df, cases = bt.back_test(symbol, '2014-01-01', '2016-01-01')
 
     value_names = []
     for case in cases:
