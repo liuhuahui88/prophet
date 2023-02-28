@@ -4,7 +4,7 @@ from prophet.data.data_storage import *
 
 class OracleAgent(Agent):
 
-    CASH_MULTIPLIER = 1000
+    CASH_UPPER_BOUND = 100000000
 
     def __init__(self, symbol, ds: StockDataStorage, window_size):
         self.symbol = symbol
@@ -12,20 +12,18 @@ class OracleAgent(Agent):
         self.df = ds.load_history(symbol)
         self.df['NextClose'] = self.df['Close'].rolling(window_size).median().shift(-window_size)
 
-        self.index = 0
-        self.target_cash = None
+        self.indexes = {self.df.iloc[i].Date: i for i in range(len(self.df))}
 
     def handle(self, ctx: Agent.Context):
-        if self.index == 0:
-            self.target_cash = ctx.get_account().get_cash() * OracleAgent.CASH_MULTIPLIER
+        if ctx.get_account().get_cash() > OracleAgent.CASH_UPPER_BOUND:
+            return
 
-        if ctx.get_account().get_cash() < self.target_cash:
-            close = self.df['Close'].iloc[self.index]
-            next_close = self.df['NextClose'].iloc[self.index]
+        index = self.indexes[ctx.get_date()]
 
-            if close > next_close:
-                ctx.ask(self.symbol)
-            else:
-                ctx.bid(self.symbol)
+        close = self.df['Close'].iloc[index]
+        next_close = self.df['NextClose'].iloc[index]
 
-        self.index += 1
+        if close > next_close:
+            ctx.ask(self.symbol)
+        else:
+            ctx.bid(self.symbol)

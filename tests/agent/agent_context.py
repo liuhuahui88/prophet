@@ -3,9 +3,10 @@ from prophet.agent.abstract_agent import *
 
 class AgentContextForTest(Agent.Context):
 
-    def __init__(self, account: Account, prices: dict):
+    def __init__(self, account: Account, prices: dict, date: str):
         self.account = account
         self.prices = prices
+        self.date = date
 
         self.symbol = None
         self.cash = None
@@ -17,6 +18,9 @@ class AgentContextForTest(Agent.Context):
 
     def get_prices(self):
         return self.prices
+
+    def get_date(self):
+        return self.date
 
     def bid(self, symbol, cash=float('inf'), price=float('inf')):
         self.symbol = symbol

@@ -16,6 +16,10 @@ class Agent(ABC):
             pass
 
         @abstractmethod
+        def get_date(self):
+            pass
+
+        @abstractmethod
         def bid(self, symbol, cash=float('inf'), price=float('inf')):
             pass
 

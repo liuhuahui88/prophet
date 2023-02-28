@@ -13,7 +13,7 @@ class TestBuyAndSellAgent(TestCase):
         agent = BuyAndSellAgent(symbol)
         account = Account(1000)
 
-        ctx1 = AgentContextForTest(account, {symbol: 300})
+        ctx1 = AgentContextForTest(account, {symbol: 300}, '2020-01-01')
         agent.handle(ctx1)
         self.assertEqual(ctx1.symbol, symbol)
         self.assertEqual(ctx1.volume, None)
@@ -23,7 +23,7 @@ class TestBuyAndSellAgent(TestCase):
         account.set_cash(100)
         account.set_volume(symbol, 3)
 
-        ctx2 = AgentContextForTest(account, {symbol: 30})
+        ctx2 = AgentContextForTest(account, {symbol: 30}, '2020-01-02')
         agent.handle(ctx2)
         self.assertEqual(ctx2.symbol, symbol)
         self.assertEqual(ctx2.volume, float('inf'))
