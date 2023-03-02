@@ -1,3 +1,4 @@
+
 import math
 
 import pandas as pd
@@ -41,11 +42,15 @@ class BackTester:
             self.agent = agent
             self.broker = broker
             self.account = Account(init_cash)
+            self.actions = []
             self.evaluator = Evaluator(init_cash)
 
         def handle(self, date, prices, liquidities):
             ctx = self.create_agent_context(date, prices, liquidities)
             self.agent.handle(ctx)
+
+            action = ctx.get_action()
+            self.actions.append(action)
 
             value = self.calculate_account_value(prices)
             self.evaluator.feed(value)
@@ -65,12 +70,16 @@ class BackTester:
 
     class AgentContext(Agent.Context):
 
+        BID = 1
+        ASK = 0
+
         def __init__(self, broker: Broker, account: Account, date: str, prices: dict, liquidities: dict):
             self.__broker = broker
             self.__account = account
             self.__date = date
             self.__prices = prices
             self.__liquidities = liquidities
+            self.__action = None
 
         def get_account(self):
             return self.__account
@@ -81,7 +90,13 @@ class BackTester:
         def get_date(self):
             return self.__date
 
+        def get_action(self):
+            return self.__action
+
         def bid(self, symbol, cash=float('inf'), price=float('inf')):
+            assert self.__action is None
+            self.__action = self.BID
+
             cash = min(cash, self.__account.get_cash())
             cash = cash - self.__broker.calculate_commission(cash)
 
@@ -90,6 +105,9 @@ class BackTester:
                 self.__broker.trade(self.__account, symbol, volume, -cash)
 
         def ask(self, symbol, volume=float('inf'), price=0):
+            assert self.__action is None
+            self.__action = self.ASK
+
             volume = min(volume, self.__account.get_volume(symbol))
 
             volume, cash = self.__liquidities[symbol].ask(volume, price)
