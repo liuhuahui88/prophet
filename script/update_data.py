@@ -6,14 +6,11 @@ from prophet.data.data_storage import *
 
 
 if __name__ == '__main__':
-
-    name_file_path = '../data/chinese_stock_codes.csv'
-    history_dir_path = '../data/history_temp'
-
-    interval_in_seconds = 3
+    storage = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history_temp')
 
     spider = StockDataSpider()
-    storage = StockDataStorage(name_file_path, history_dir_path)
+
+    interval_in_seconds = 3
 
     symbols = storage.get_symbols()
     num_of_symbols = len(symbols)

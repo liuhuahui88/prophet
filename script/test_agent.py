@@ -8,8 +8,8 @@ from prophet.bt.back_tester import *
 
 if __name__ == '__main__':
     stock_db = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
-    broker = Broker(0.01)
-    bt = BackTester(stock_db, broker)
+
+    bt = BackTester(stock_db, Broker(0.01))
 
     symbol = '600000'
     name = stock_db.get_name(symbol)

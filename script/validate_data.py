@@ -3,12 +3,9 @@ from prophet.data.data_validator import *
 
 
 if __name__ == '__main__':
+    storage = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
+
     validator = StockDataValidator('2010-01-01')
-
-    name_file_path = '../data/chinese_stock_codes.csv'
-    history_dir_path = '../data/history'
-
-    storage = StockDataStorage(name_file_path, history_dir_path)
 
     for symbol in storage.get_symbols():
         name = storage.get_name(symbol)
