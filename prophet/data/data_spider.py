@@ -7,10 +7,10 @@ class StockDataSpider:
     def crawl(cls, symbol):
         symbol = StockDataSpider.__transform_symbol(symbol)
         ticker = yf.Ticker(symbol)
-        df = ticker.history(period='max')
-        df = df.reset_index()
-        df['Date'] = df['Date'].apply(lambda x: x.date())
-        return df
+        history = ticker.history(period='max')
+        history = history.reset_index()
+        history['Date'] = history['Date'].apply(lambda x: x.date())
+        return history
 
     @staticmethod
     def __transform_symbol(symbol):

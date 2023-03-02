@@ -6,10 +6,10 @@ class OracleAgent(Agent):
 
     CASH_UPPER_BOUND = 100000000
 
-    def __init__(self, symbol, ds: StockDataStorage, discount):
+    def __init__(self, symbol, storage: StockDataStorage, discount):
         self.symbol = symbol
-        self.df = ds.load_history(symbol)
-        self.indexes = {self.df.iloc[i].Date: i for i in range(len(self.df))}
+        self.history = storage.load_history(symbol)
+        self.indexes = {self.history.iloc[i].Date: i for i in range(len(self.history))}
         self.discount = discount
 
     def handle(self, ctx: Agent.Context):
@@ -23,9 +23,9 @@ class OracleAgent(Agent):
 
     def f(self, date, min_gain, max_gain):
         index = self.indexes[date]
-        max_index = len(self.df)
+        max_index = len(self.history)
 
-        closes = self.df['Close']
+        closes = self.history['Close']
         base = closes.iloc[index]
         for i in range(index, max_index):
             gain = closes.iloc[i] / base

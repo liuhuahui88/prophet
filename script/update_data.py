@@ -20,13 +20,13 @@ if __name__ == '__main__':
 
         print('{}/{} : {}'.format(i + 1, num_of_symbols, [symbol, name]))
 
-        df = spider.crawl(symbol)
+        history = spider.crawl(symbol)
 
-        if df.shape[0] == 0:
+        if history.shape[0] == 0:
             err_msg = "no record"
             print(err_msg)
             os.system("say '{}'".format(err_msg))
 
-        storage.save_history(symbol, df)
+        storage.save_history(symbol, history)
 
         time.sleep(interval_in_seconds)

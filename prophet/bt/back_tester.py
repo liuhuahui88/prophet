@@ -13,8 +13,8 @@ from prophet.bt.liquidity import Liquidity
 
 class BackTester:
 
-    def __init__(self, stock_db: StockDataStorage, broker: Broker, init_cash=1000000):
-        self.stock_db = stock_db
+    def __init__(self, storage: StockDataStorage, broker: Broker, init_cash=1000000):
+        self.storage = storage
         self.broker = broker
         self.init_cash = init_cash
         self.agents = {}
@@ -23,18 +23,18 @@ class BackTester:
         self.agents[name] = agent
 
     def back_test(self, symbol: str, start_date=None, end_date=None):
-        df = self.__load_history(symbol, start_date, end_date)
+        history = self.__load_history(symbol, start_date, end_date)
 
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 
-        for i in range(len(df)):
-            date = self.__create_date(df, i)
-            prices = self.__create_prices(symbol, df, i)
-            liquidities = self.__create_liquidities(symbol, df, i)
+        for i in range(len(history)):
+            date = self.__create_date(history, i)
+            prices = self.__create_prices(symbol, history, i)
+            liquidities = self.__create_liquidities(symbol, history, i)
             for case in cases:
                 case.handle(date, prices, liquidities)
 
-        return df, cases
+        return history, cases
 
     class TestCase:
 
@@ -116,7 +116,7 @@ class BackTester:
                 self.__broker.trade(self.__account, symbol, -volume, cash)
 
     def __load_history(self, symbol, start_date, end_date):
-        history = self.stock_db.load_history(symbol)
+        history = self.storage.load_history(symbol)
         if start_date is not None:
             history = history[history.Date >= start_date]
         if end_date is not None:
