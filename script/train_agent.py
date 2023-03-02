@@ -26,5 +26,5 @@ if __name__ == '__main__':
 
     result = bt.back_test(symbol, train_end_date, test_end_date)
     result.print()
-    result.plot()
+    result.plot('IMI')
 

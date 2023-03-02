@@ -9,6 +9,7 @@ from prophet.utils.evaluator import Evaluator
 from prophet.bt.broker import Broker
 from prophet.bt.liquidity import Liquidity
 from prophet.utils.figure import Figure
+from prophet.utils.constant import Const
 
 
 class BackTester:
@@ -49,7 +50,7 @@ class BackTester:
             for case in self.cases:
                 print('{} : {} : {}'.format([self.symbol, self.name], case.name, case.evaluator))
 
-        def plot(self):
+        def plot(self, action_agent_name=None):
             temp_history = self.history.copy()
 
             value_names = []
@@ -58,7 +59,14 @@ class BackTester:
                 value_names.append(value_name)
                 temp_history[value_name] = case.evaluator.values[1:]
 
-            figure = Figure(value_names=value_names)
+            if action_agent_name is None:
+                action_name = None
+            else:
+                case = next(x for x in self.cases if x.name == action_agent_name)
+                action_name = 'A_' + case.name
+                temp_history[action_name] = case.actions
+
+            figure = Figure(action_name=action_name, value_names=value_names)
             figure.plot(temp_history, str([self.symbol, self.name]))
 
     class TestCase:
@@ -96,9 +104,6 @@ class BackTester:
 
     class AgentContext(Agent.Context):
 
-        BID = 1
-        ASK = 0
-
         def __init__(self, broker: Broker, account: Account, date: str, prices: dict, liquidities: dict):
             self.__broker = broker
             self.__account = account
@@ -121,7 +126,7 @@ class BackTester:
 
         def bid(self, symbol, cash=float('inf'), price=float('inf')):
             assert self.__action is None
-            self.__action = self.BID
+            self.__action = Const.BID
 
             cash = min(cash, self.__account.get_cash())
             cash = cash - self.__broker.calculate_commission(cash)
@@ -132,7 +137,7 @@ class BackTester:
 
         def ask(self, symbol, volume=float('inf'), price=0):
             assert self.__action is None
-            self.__action = self.ASK
+            self.__action = Const.ASK
 
             volume = min(volume, self.__account.get_volume(symbol))
 

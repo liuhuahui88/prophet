@@ -1,7 +1,11 @@
+import math
+
 import pandas as pd
 import numpy as np
 import plotly.subplots as sp
 import plotly.graph_objects as go
+
+from prophet.utils.constant import Const
 
 
 class Figure:
@@ -14,12 +18,6 @@ class Figure:
         self.row_1_height = 0.4
         self.row_2_height = 0.1
         self.row_3_height = 0.4
-
-        self.ACTION_BUY = 'B'
-        self.ACTION_SELL = 'S'
-
-        self.DEFAULT_VALUE = 1
-        self.DEFAULT_ACTION = self.ACTION_SELL
 
     def plot(self, df: pd.DataFrame, title=None, start_date=None, end_date=None):
         # Select record from start date to end date
@@ -85,21 +83,23 @@ class Figure:
     def add_action(self, fig, df, x_name, y_name):
         shapes = []
 
-        previous_action = self.ACTION_SELL
+        previous_action = Const.ASK
         start_dt = None
         for i in df.index:
             record = df.loc[i]
             action = record[y_name]
+            if action is None or math.isnan(action):
+                continue
 
-            if previous_action == self.ACTION_SELL and action == self.ACTION_BUY:
+            if previous_action == Const.ASK and action == Const.BID:
                 start_dt = record[x_name]
-            elif previous_action == self.ACTION_BUY and action == self.ACTION_SELL:
+            elif previous_action == Const.BID and action == Const.ASK:
                 end_dt = record[x_name]
                 shapes.append(self.define_rectangle(start_dt, end_dt))
 
             previous_action = action
 
-        if previous_action == self.ACTION_BUY:
+        if previous_action == Const.BID:
             end_dt = record[x_name]
             shapes.append(self.define_rectangle(start_dt, end_dt))
 
