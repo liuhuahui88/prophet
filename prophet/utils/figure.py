@@ -21,7 +21,7 @@ class Figure:
         self.DEFAULT_VALUE = 1
         self.DEFAULT_ACTION = self.ACTION_SELL
 
-    def plot(self, df: pd.DataFrame, title='UNKNOWN', start_date=None, end_date=None):
+    def plot(self, df: pd.DataFrame, title=None, start_date=None, end_date=None):
         # Select record from start date to end date
         if start_date is not None:
             df = df[df.Date >= start_date]

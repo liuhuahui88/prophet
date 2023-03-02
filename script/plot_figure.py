@@ -4,8 +4,10 @@ from prophet.data.data_storage import *
 if __name__ == '__main__':
     storage = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
 
-    history = storage.load_history('600000')
+    symbol = '600000'
+
+    history = storage.load_history(symbol)
 
     figure = Figure()
 
-    figure.plot(history, start_date='2022-11-01', end_date='2023-01-01')
+    figure.plot(history, symbol, '2022-11-01', '2023-01-01')
