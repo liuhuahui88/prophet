@@ -1,7 +1,7 @@
 import collections
 import numpy as np
 
-from prophet.agent.abstract_agent import *
+from prophet.agent.abstract_agent import Agent
 
 
 class MovingAverageAgent(Agent):

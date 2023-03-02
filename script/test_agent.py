@@ -1,6 +1,9 @@
-from prophet.agent import *
+from prophet.agent.buy_and_hold_agent import BuyAndHoldAgent
+from prophet.agent.buy_and_sell_agent import BuyAndSellAgent
+from prophet.agent.moving_average_agent import MovingAverageAgent
+from prophet.agent.oracle_agent import OracleAgent
+from prophet.utils.figure import Figure
 from prophet.bt.back_tester import *
-from prophet.utils.figure import *
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-from prophet.utils.account import *
+from prophet.utils.account import Account
 
 
 class Broker:

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from prophet.utils.account import *
+from prophet.utils.account import Account
 
 
 class Agent(ABC):

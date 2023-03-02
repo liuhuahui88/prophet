@@ -3,11 +3,12 @@ import math
 
 import pandas as pd
 
-from prophet.data.data_storage import *
-from prophet.agent.abstract_agent import *
-from prophet.utils.evaluator import *
-from prophet.bt.broker import *
-from prophet.bt.liquidity import *
+from prophet.data.data_storage import StockDataStorage
+from prophet.agent.abstract_agent import Agent
+from prophet.utils.account import Account
+from prophet.utils.evaluator import Evaluator
+from prophet.bt.broker import Broker
+from prophet.bt.liquidity import Liquidity
 
 
 class BackTester:

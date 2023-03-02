@@ -1,4 +1,4 @@
-from prophet.agent.abstract_agent import *
+from prophet.agent.abstract_agent import Agent
 
 
 class BuyAndHoldAgent(Agent):

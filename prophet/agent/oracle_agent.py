@@ -1,5 +1,5 @@
-from prophet.agent.abstract_agent import *
-from prophet.data.data_storage import *
+from prophet.agent.abstract_agent import Agent
+from prophet.data.data_storage import StockDataStorage
 
 
 class OracleAgent(Agent):
