@@ -102,7 +102,7 @@ class BackTester:
             history = history[history.Date >= start_date]
         if end_date is not None:
             history = history[history.Date < end_date]
-        history = history.reset_index()
+        history = history.reset_index(drop=True)
         return history
 
     @staticmethod
