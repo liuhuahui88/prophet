@@ -1,4 +1,3 @@
-
 import math
 
 import pandas as pd
@@ -9,6 +8,7 @@ from prophet.utils.account import Account
 from prophet.utils.evaluator import Evaluator
 from prophet.bt.broker import Broker
 from prophet.bt.liquidity import Liquidity
+from prophet.utils.figure import Figure
 
 
 class BackTester:
@@ -23,6 +23,7 @@ class BackTester:
         self.agents[name] = agent
 
     def back_test(self, symbol: str, start_date=None, end_date=None):
+        name = self.storage.get_name(symbol)
         history = self.__load_history(symbol, start_date, end_date)
 
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
@@ -34,7 +35,31 @@ class BackTester:
             for case in cases:
                 case.handle(date, prices, liquidities)
 
-        return history, cases
+        return BackTester.TestResult(symbol, name, history, cases)
+
+    class TestResult:
+
+        def __init__(self, symbol, name, history, cases):
+            self.symbol = symbol
+            self.name = name
+            self.history = history
+            self.cases = cases
+
+        def print(self):
+            for case in self.cases:
+                print('{} : {} : {}'.format([self.symbol, self.name], case.name, case.evaluator))
+
+        def plot(self):
+            temp_history = self.history.copy()
+
+            value_names = []
+            for case in self.cases:
+                value_name = 'V_' + case.name
+                value_names.append(value_name)
+                temp_history[value_name] = case.evaluator.values[1:]
+
+            figure = Figure(value_names=value_names)
+            figure.plot(temp_history, str([self.symbol, self.name]))
 
     class TestCase:
 
