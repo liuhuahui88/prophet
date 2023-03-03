@@ -7,7 +7,10 @@ from prophet.bt.back_tester import *
 if __name__ == '__main__':
     storage = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
 
-    bt = BackTester(storage, Broker(0.01))
+    commission_rate = 0.01
+    discount = (1 - commission_rate) / (1 + commission_rate)
+
+    bt = BackTester(storage, Broker(commission_rate))
 
     symbol = '600000'
 
@@ -15,7 +18,7 @@ if __name__ == '__main__':
     bt.register('B&S', BuyAndSellAgent(symbol, False))
     bt.register('S&B', BuyAndSellAgent(symbol, True))
     bt.register('MAA', MovingAverageAgent(symbol, 5, 10))
-    bt.register('ORA', OracleAgent(symbol, storage, 0.99 / 1.01))
+    bt.register('ORA', OracleAgent(symbol, storage, discount))
 
     result = bt.back_test(symbol, '2014-01-01', '2016-01-01')
     result.print()
