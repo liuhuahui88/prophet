@@ -72,9 +72,19 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def train_model(samples: pd.DataFrame):
+        train_pct = 0.9
+
+        num_samples = len(samples)
+        num_train_samples = int(train_pct * num_samples)
+        num_test_samples = num_samples - num_train_samples
+
         target = samples.pop('Action')
         dataset = tf.data.Dataset.from_tensor_slices((samples.values, target.values))
-        train_dataset = dataset.batch(len(samples))
+        dataset.shuffle(num_samples)
+
+        train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
+        test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
+
         model = tf.keras.models.Sequential([
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.BatchNormalization(momentum=0),
@@ -90,7 +100,8 @@ class ImitativeAgent(Agent):
             tf.keras.layers.BatchNormalization(momentum=0),
             tf.keras.layers.Dense(1, activation='sigmoid')
         ])
-        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-        model.fit(train_dataset, epochs=100, verbose=False)
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy', 'AUC'])
+        model.fit(train_dataset, epochs=100, validation_data=test_dataset, verbose=False)
         model.evaluate(train_dataset)
+        model.evaluate(test_dataset)
         return model
