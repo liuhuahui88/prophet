@@ -33,14 +33,17 @@ class ImitativeAgent(Agent):
             ctx.bid(self.symbol)
 
     def observe(self, history: pd.DataFrame, actions):
-        raw_samples = self.generate_samples(history, actions, self.window_size)
+        raw_features, raw_labels = self.extract_samples(history, actions, self.window_size)
 
-        full_pos_samples = self.augment_samples(raw_samples, self.FULL, self.BID)
-        empty_pos_samples = self.augment_samples(raw_samples, self.EMPTY, self.ASK)
+        full_pos_features, full_pos_labels = self.augment_samples(raw_features, raw_labels, self.FULL, self.BID)
+        empty_pos_features, empty_pos_labels = self.augment_samples(raw_features, raw_labels, self.EMPTY, self.ASK)
 
-        samples = pd.concat([full_pos_samples, empty_pos_samples], ignore_index=True)
+        features = pd.concat([full_pos_features, empty_pos_features], ignore_index=True)
+        labels = pd.concat([full_pos_labels, empty_pos_labels], ignore_index=True)
 
-        self.model = self.train_model(samples)
+        transformed_features = self.transform_features(features)
+
+        self.model = self.train_model(transformed_features, labels)
 
     def predict(self, ctx: Agent.Context):
         feature_dict = {'Close-{}'.format(i): self.price_queue[-(i + 1)] for i in range(self.window_size)}
@@ -49,37 +52,47 @@ class ImitativeAgent(Agent):
         feature_dict['Position'] = self.FULL if volume != 0 else self.EMPTY
 
         feature_df = pd.DataFrame(feature_dict, index=[0])
-        dataset = tf.data.Dataset.from_tensor_slices(feature_df).batch(1)
+        transformed_feature_df = self.transform_features(feature_df)
+        dataset = tf.data.Dataset.from_tensor_slices(transformed_feature_df).batch(1)
         score = self.model.predict(dataset, verbose=False).ravel()
 
         return self.BID if score > 0.5 else self.ASK
 
     @staticmethod
-    def generate_samples(history: pd.DataFrame, actions, window_size):
-        raw_samples = pd.DataFrame()
+    def extract_samples(history: pd.DataFrame, actions, window_size):
+        features = pd.DataFrame()
         for i in range(window_size):
-            raw_samples['Close-{}'.format(i)] = history.shift(i)['Close']
-        raw_samples['Action'] = actions
-        raw_samples = raw_samples[window_size - 1:]
-        return raw_samples
+            features['Close-{}'.format(i)] = history.shift(i)['Close']
+        features = features[window_size - 1:]
+
+        labels = pd.DataFrame()
+        labels['Action'] = actions[window_size - 1:]
+
+        return features, labels
 
     @staticmethod
-    def augment_samples(raw_samples, position, default_action):
-        samples = raw_samples.copy()
-        samples['Position'] = position
-        samples['Action'].fillna(value=default_action, inplace=True)
-        return samples
+    def augment_samples(features: pd.DataFrame, labels: pd.DataFrame, position, default_action):
+        features = features.copy()
+        features['Position'] = position
+
+        labels = labels.copy()
+        labels['Action'].fillna(value=default_action, inplace=True)
+
+        return features, labels
 
     @staticmethod
-    def train_model(samples: pd.DataFrame):
+    def transform_features(features: pd.DataFrame):
+        return features
+
+    @staticmethod
+    def train_model(features: pd.DataFrame, labels: pd.DataFrame):
         train_pct = 0.9
 
-        num_samples = len(samples)
+        num_samples = len(features)
         num_train_samples = int(train_pct * num_samples)
         num_test_samples = num_samples - num_train_samples
 
-        target = samples.pop('Action')
-        dataset = tf.data.Dataset.from_tensor_slices((samples.values, target.values))
+        dataset = tf.data.Dataset.from_tensor_slices((features.values, labels.values))
         dataset.shuffle(num_samples)
 
         train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
