@@ -4,15 +4,10 @@ import pandas as pd
 import tensorflow as tf
 
 from prophet.agent.abstract_agent import Agent
+from prophet.utils.constant import Const
 
 
 class ImitativeAgent(Agent):
-
-    BID = 1
-    ASK = 0
-
-    FULL = 1
-    EMPTY = 0
 
     def __init__(self, symbol, window_size):
         self.symbol = symbol
@@ -27,7 +22,7 @@ class ImitativeAgent(Agent):
             return
 
         action = self.predict(ctx)
-        if action == self.ASK:
+        if action == Const.ASK:
             ctx.ask(self.symbol)
         else:
             ctx.bid(self.symbol)
@@ -35,8 +30,8 @@ class ImitativeAgent(Agent):
     def observe(self, history: pd.DataFrame, actions):
         raw_features, raw_labels = self.extract_samples(history, actions, self.window_size)
 
-        full_pos_features, full_pos_labels = self.augment_samples(raw_features, raw_labels, self.FULL, self.BID)
-        empty_pos_features, empty_pos_labels = self.augment_samples(raw_features, raw_labels, self.EMPTY, self.ASK)
+        full_pos_features, full_pos_labels = self.augment_samples(raw_features, raw_labels, Const.FULL, Const.BID)
+        empty_pos_features, empty_pos_labels = self.augment_samples(raw_features, raw_labels, Const.EMPTY, Const.ASK)
 
         features = pd.concat([full_pos_features, empty_pos_features], ignore_index=True)
         labels = pd.concat([full_pos_labels, empty_pos_labels], ignore_index=True)
@@ -49,14 +44,14 @@ class ImitativeAgent(Agent):
         feature_dict = {'Close-{}'.format(i): self.price_queue[-(i + 1)] for i in range(self.window_size)}
 
         volume = ctx.get_account().get_volume(self.symbol)
-        feature_dict['Position'] = self.FULL if volume != 0 else self.EMPTY
+        feature_dict['Position'] = Const.FULL if volume != 0 else Const.EMPTY
 
         feature_df = pd.DataFrame(feature_dict, index=[0])
         transformed_feature_df = self.transform_features(feature_df)
         dataset = tf.data.Dataset.from_tensor_slices(transformed_feature_df).batch(1)
         score = self.model.predict(dataset, verbose=False).ravel()
 
-        return self.BID if score > 0.5 else self.ASK
+        return Const.BID if score > 0.5 else Const.ASK
 
     @staticmethod
     def extract_samples(history: pd.DataFrame, actions, window_size):
