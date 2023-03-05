@@ -81,15 +81,16 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def transform_features(features: pd.DataFrame):
-        return features
+        position = features.pop('Position')
+        return {'position': position, 'price': features}
 
     @staticmethod
-    def create_datasets(features: pd.DataFrame, labels: pd.DataFrame, train_pct):
-        num_samples = len(features)
+    def create_datasets(features, labels, train_pct):
+        num_samples = len(labels)
         num_train_samples = int(train_pct * num_samples)
         num_test_samples = num_samples - num_train_samples
 
-        dataset = tf.data.Dataset.from_tensor_slices((features.values, labels.values))
+        dataset = tf.data.Dataset.from_tensor_slices((features, labels))
         dataset.shuffle(num_samples)
 
         train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
@@ -99,22 +100,18 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def create_model():
-        model = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.BatchNormalization(momentum=0),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.BatchNormalization(momentum=0),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.BatchNormalization(momentum=0),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.BatchNormalization(momentum=0),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.BatchNormalization(momentum=0),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.BatchNormalization(momentum=0),
-            tf.keras.layers.Dense(1, activation='sigmoid')
-        ])
-        return model
+        input1 = tf.keras.layers.Input(name='position', shape=(1,))
+        input2 = tf.keras.layers.Input(name='price', shape=(30,))
+        inputs = [input1, input2]
+
+        x = tf.keras.layers.Concatenate()(inputs)
+        x = tf.keras.layers.Dense(128, activation='relu')(x)
+        x = tf.keras.layers.BatchNormalization(momentum=0)(x)
+        x = tf.keras.layers.Dense(128, activation='relu')(x)
+        x = tf.keras.layers.BatchNormalization(momentum=0)(x)
+        x = tf.keras.layers.Dense(1, activation='sigmoid')(x)
+
+        return tf.keras.models.Model(inputs=inputs, outputs=x)
 
     @staticmethod
     def train_model(model, train_dataset, test_dataset, epochs):
