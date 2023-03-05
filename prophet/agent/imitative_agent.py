@@ -27,35 +27,38 @@ class ImitativeAgent(Agent):
         else:
             ctx.bid(self.symbol)
 
-    def observe(self, history: pd.DataFrame, actions):
-        raw_features, raw_labels = self.extract_samples(history, actions, self.window_size)
-
-        full_pos_features, full_pos_labels = self.augment_samples(raw_features, raw_labels, Const.FULL, Const.BID)
-        empty_pos_features, empty_pos_labels = self.augment_samples(raw_features, raw_labels, Const.EMPTY, Const.ASK)
-
-        features = pd.concat([full_pos_features, empty_pos_features], ignore_index=True)
-        labels = pd.concat([full_pos_labels, empty_pos_labels], ignore_index=True)
-
-        transformed_features = self.transform_features(features)
-
-        train_dataset, test_dataset = self.create_datasets(transformed_features, labels, 0.9)
-
-        model = self.create_model()
-        self.train_model(model, train_dataset, test_dataset, 100)
-        self.model = model
-
     def predict(self, ctx: Agent.Context):
-        feature_dict = {'Close-{}'.format(i): self.price_queue[-(i + 1)] for i in range(self.window_size)}
+        features = self.extract_features(ctx, self.symbol, self.price_queue, self.window_size)
+        features = self.transform_features(features)
 
-        volume = ctx.get_account().get_volume(self.symbol)
+        dataset = tf.data.Dataset.from_tensor_slices(features).batch(1)
+
+        score = self.model.predict(dataset, verbose=False).ravel()
+        return Const.BID if score > 0.5 else Const.ASK
+
+    def observe(self, history: pd.DataFrame, actions):
+        features, labels = self.extract_samples(history, actions, self.window_size)
+        features, labels = self.augment_samples(features, labels)
+        features = self.transform_features(features)
+
+        train_dataset, test_dataset = self.create_datasets(features, labels, 0.9)
+
+        self.model = self.create_model()
+        self.train_model(self.model, train_dataset, test_dataset, 100)
+
+    @staticmethod
+    def extract_features(ctx: Agent.Context, symbol, price_queue, window_size):
+        feature_dict = {'Close-{}'.format(i): price_queue[-(i + 1)] for i in range(window_size)}
+
+        volume = ctx.get_account().get_volume(symbol)
         feature_dict['Position'] = Const.FULL if volume != 0 else Const.EMPTY
 
-        feature_df = pd.DataFrame(feature_dict, index=[0])
-        transformed_feature_df = self.transform_features(feature_df)
-        dataset = tf.data.Dataset.from_tensor_slices(transformed_feature_df).batch(1)
-        score = self.model.predict(dataset, verbose=False).ravel()
+        return pd.DataFrame(feature_dict, index=[0])
 
-        return Const.BID if score > 0.5 else Const.ASK
+    @staticmethod
+    def transform_features(features: pd.DataFrame):
+        position = features.pop('Position')
+        return {'position': position, 'price': features}
 
     @staticmethod
     def extract_samples(history: pd.DataFrame, actions, window_size):
@@ -70,7 +73,17 @@ class ImitativeAgent(Agent):
         return features, labels
 
     @staticmethod
-    def augment_samples(features: pd.DataFrame, labels: pd.DataFrame, position, default_action):
+    def augment_samples(features: pd.DataFrame, labels: pd.DataFrame):
+        full_pos_features, full_pos_labels = ImitativeAgent.augment_samples_inner(features, labels, Const.FULL, Const.BID)
+        empty_pos_features, empty_pos_labels = ImitativeAgent.augment_samples_inner(features, labels, Const.EMPTY, Const.ASK)
+
+        features = pd.concat([full_pos_features, empty_pos_features], ignore_index=True)
+        labels = pd.concat([full_pos_labels, empty_pos_labels], ignore_index=True)
+
+        return features, labels
+
+    @staticmethod
+    def augment_samples_inner(features: pd.DataFrame, labels: pd.DataFrame, position, default_action):
         features = features.copy()
         features['Position'] = position
 
@@ -78,11 +91,6 @@ class ImitativeAgent(Agent):
         labels['Action'].fillna(value=default_action, inplace=True)
 
         return features, labels
-
-    @staticmethod
-    def transform_features(features: pd.DataFrame):
-        position = features.pop('Position')
-        return {'position': position, 'price': features}
 
     @staticmethod
     def create_datasets(features, labels, train_pct):
