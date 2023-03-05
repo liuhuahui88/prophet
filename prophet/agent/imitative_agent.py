@@ -38,7 +38,11 @@ class ImitativeAgent(Agent):
 
         transformed_features = self.transform_features(features)
 
-        self.model = self.train_model(transformed_features, labels)
+        train_dataset, test_dataset = self.create_datasets(transformed_features, labels, 0.9)
+
+        model = self.create_model()
+        self.train_model(model, train_dataset, test_dataset, 100)
+        self.model = model
 
     def predict(self, ctx: Agent.Context):
         feature_dict = {'Close-{}'.format(i): self.price_queue[-(i + 1)] for i in range(self.window_size)}
@@ -80,9 +84,7 @@ class ImitativeAgent(Agent):
         return features
 
     @staticmethod
-    def train_model(features: pd.DataFrame, labels: pd.DataFrame):
-        train_pct = 0.9
-
+    def create_datasets(features: pd.DataFrame, labels: pd.DataFrame, train_pct):
         num_samples = len(features)
         num_train_samples = int(train_pct * num_samples)
         num_test_samples = num_samples - num_train_samples
@@ -93,6 +95,10 @@ class ImitativeAgent(Agent):
         train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
         test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
 
+        return train_dataset, test_dataset
+
+    @staticmethod
+    def create_model():
         model = tf.keras.models.Sequential([
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.BatchNormalization(momentum=0),
@@ -108,8 +114,12 @@ class ImitativeAgent(Agent):
             tf.keras.layers.BatchNormalization(momentum=0),
             tf.keras.layers.Dense(1, activation='sigmoid')
         ])
+        return model
+
+    @staticmethod
+    def train_model(model, train_dataset, test_dataset, epochs):
         model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy', 'AUC'])
-        model.fit(train_dataset, epochs=100, validation_data=test_dataset, verbose=False)
+        model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False)
         model.evaluate(train_dataset)
         model.evaluate(test_dataset)
         return model
