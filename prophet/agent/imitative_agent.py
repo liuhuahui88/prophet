@@ -99,7 +99,7 @@ class ImitativeAgent(Agent):
         num_test_samples = num_samples - num_train_samples
 
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
-        dataset.shuffle(num_samples)
+        dataset = dataset.shuffle(num_samples, reshuffle_each_iteration=False)
 
         train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
         test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
