@@ -158,7 +158,7 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def train_model(model, train_dataset, test_dataset, epochs):
-        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy', 'AUC'])
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
