@@ -62,6 +62,10 @@ class ImitativeAgent(Agent):
 
         price = features
 
+        gain = pd.DataFrame()
+        for i in range(1, 30):
+            gain['gain{}'.format(i)] = price['Close-0'] / price['Close-{}'.format(i)]
+
         mean = pd.DataFrame()
         mean['ma5'] = price[['Close-{}'.format(i) for i in range(5)]].mean(axis=1)
         mean['ma10'] = price[['Close-{}'.format(i) for i in range(10)]].mean(axis=1)
@@ -80,7 +84,7 @@ class ImitativeAgent(Agent):
         skew['skew20'] = sp.stats.skew(price[['Close-{}'.format(i) for i in range(20)]], axis=1)
         skew['skew30'] = sp.stats.skew(price[['Close-{}'.format(i) for i in range(30)]], axis=1)
 
-        return {'position': position, 'price': price, 'mean': mean, 'std': std, 'skew': skew}
+        return {'position': position, 'price': price, 'mean': mean, 'std': std, 'skew': skew, 'gain': gain}
 
     @staticmethod
     def extract_samples(history: pd.DataFrame, actions, window_size):
@@ -139,7 +143,8 @@ class ImitativeAgent(Agent):
         input3 = tf.keras.layers.Input(name='mean', shape=(4,))
         input4 = tf.keras.layers.Input(name='std', shape=(4,))
         input5 = tf.keras.layers.Input(name='skew', shape=(4,))
-        inputs = [input1, input2, input3, input4, input5]
+        input6 = tf.keras.layers.Input(name='gain', shape=(29,))
+        inputs = [input1, input2, input3, input4, input5, input6]
 
         x = tf.keras.layers.Concatenate()(inputs)
         x = tf.keras.layers.Dense(128, activation='relu')(x)
