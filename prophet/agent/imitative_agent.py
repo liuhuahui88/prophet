@@ -1,4 +1,5 @@
 import collections
+import datetime
 
 import pandas as pd
 import tensorflow as tf
@@ -158,7 +159,13 @@ class ImitativeAgent(Agent):
     @staticmethod
     def train_model(model, train_dataset, test_dataset, epochs):
         model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy', 'AUC'])
-        model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False)
+
+        logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
+
+        model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False, callbacks=[tensorboard_callback])
+
         model.evaluate(train_dataset)
         model.evaluate(test_dataset)
+
         return model
