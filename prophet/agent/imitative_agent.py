@@ -66,9 +66,11 @@ class ImitativeAgent(Agent):
         for i in range(window_size):
             features['Close-{}'.format(i)] = history.shift(i)['Close']
         features = features[window_size - 1:]
+        features = features.reset_index(drop=True)
 
         labels = pd.DataFrame()
         labels['Action'] = actions[window_size - 1:]
+        labels = labels.reset_index(drop=True)
 
         return features, labels
 
@@ -77,8 +79,11 @@ class ImitativeAgent(Agent):
         full_pos_features, full_pos_labels = ImitativeAgent.augment_samples_inner(features, labels, Const.FULL, Const.BID)
         empty_pos_features, empty_pos_labels = ImitativeAgent.augment_samples_inner(features, labels, Const.EMPTY, Const.ASK)
 
-        features = pd.concat([full_pos_features, empty_pos_features], ignore_index=True)
-        labels = pd.concat([full_pos_labels, empty_pos_labels], ignore_index=True)
+        features = pd.concat([full_pos_features, empty_pos_features])
+        features = features.sort_index(kind='mergesort').reset_index(drop=True)
+
+        labels = pd.concat([full_pos_labels, empty_pos_labels])
+        labels = labels.sort_index(kind='mergesort').reset_index(drop=True)
 
         return features, labels
 
@@ -99,7 +104,6 @@ class ImitativeAgent(Agent):
         num_test_samples = num_samples - num_train_samples
 
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
-        dataset = dataset.shuffle(num_samples, reshuffle_each_iteration=False)
 
         train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
         test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
