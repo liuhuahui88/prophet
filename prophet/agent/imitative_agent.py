@@ -175,9 +175,12 @@ class ImitativeAgent(Agent):
         model.compile(optimizer='adam', loss='binary_crossentropy', weighted_metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)
+        tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)
 
-        model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False, callbacks=[tensorboard_callback])
+        early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
+
+        model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False,
+                  callbacks=[tensor_board_callback, early_stopping_callback])
 
         model.evaluate(train_dataset)
         model.evaluate(test_dataset)
