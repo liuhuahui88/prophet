@@ -15,7 +15,8 @@ class ImitativeAgent(Agent):
         self.symbol = symbol
         self.window_size = window_size
         self.price_queue = collections.deque([], maxlen=window_size)
-        self.model = None
+        self.model_for_train = None
+        self.model_for_prediction = None
 
     def handle(self, ctx: Agent.Context):
         self.price_queue.append(ctx.get_prices()[self.symbol])
@@ -35,19 +36,22 @@ class ImitativeAgent(Agent):
 
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(1)
 
-        score = self.model.predict(dataset, verbose=False).ravel()
+        score = self.model_for_prediction.predict(dataset, verbose=False).ravel()
         return Const.BID if score > 0.5 else Const.ASK
 
     def observe(self, history: pd.DataFrame, actions):
         features, labels = self.extract_samples(history, actions, self.window_size)
         features, labels = self.augment_samples(features, labels)
+
         weights = self.balance_samples(features, labels)
+
         features = self.transform_features(features)
+        labels = self.transform_labels(labels)
 
         train_dataset, test_dataset = self.create_datasets(features, labels, weights, 0.9)
 
-        self.model = self.create_model()
-        self.train_model(self.model, train_dataset, test_dataset, 100)
+        self.model_for_train, self.model_for_prediction = self.create_model()
+        self.train_model(self.model_for_train, train_dataset, test_dataset, 100)
 
     @staticmethod
     def extract_features(ctx: Agent.Context, symbol, price_queue, window_size):
@@ -87,6 +91,10 @@ class ImitativeAgent(Agent):
         skew['skew30'] = sp.stats.skew(price[['Close-{}'.format(i) for i in range(30)]], axis=1)
 
         return {'position': position, 'price': price, 'mean': mean, 'std': std, 'skew': skew, 'gain': gain}
+
+    @staticmethod
+    def transform_labels(labels: pd.DataFrame):
+        return {'action_1': labels, 'action_2': labels}
 
     @staticmethod
     def extract_samples(history: pd.DataFrame, actions, window_size):
@@ -140,7 +148,7 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def create_datasets(features, labels, weights, train_pct):
-        num_samples = len(labels)
+        num_samples = len(weights)
         num_train_samples = int(train_pct * num_samples)
         num_test_samples = num_samples - num_train_samples
 
@@ -166,13 +174,31 @@ class ImitativeAgent(Agent):
         x = tf.keras.layers.BatchNormalization(momentum=0)(x)
         x = tf.keras.layers.Dense(128, activation='relu')(x)
         x = tf.keras.layers.BatchNormalization(momentum=0)(x)
-        x = tf.keras.layers.Dense(1, activation='sigmoid')(x)
 
-        return tf.keras.models.Model(inputs=inputs, outputs=x)
+        y = tf.keras.layers.Dense(128, activation='relu')(x)
+        y = tf.keras.layers.BatchNormalization(momentum=0)(y)
+        y = tf.keras.layers.Dense(128, activation='relu')(y)
+        y = tf.keras.layers.BatchNormalization(momentum=0)(y)
+        y = tf.keras.layers.Dense(1, activation='sigmoid', name='action_1')(y)
+
+        z = tf.keras.layers.Dense(128, activation='relu')(x)
+        z = tf.keras.layers.BatchNormalization(momentum=0)(z)
+        z = tf.keras.layers.Dense(128, activation='relu')(z)
+        z = tf.keras.layers.BatchNormalization(momentum=0)(z)
+        z = tf.keras.layers.Dense(1, activation='sigmoid', name='action_2')(z)
+
+        a = tf.keras.layers.Average()([y, z])
+
+        model_for_train = tf.keras.models.Model(inputs=inputs, outputs=[y, z])
+        model_for_prediction = tf.keras.models.Model(inputs=inputs, outputs=a)
+
+        return model_for_train, model_for_prediction
 
     @staticmethod
-    def train_model(model, train_dataset, test_dataset, epochs):
-        model.compile(optimizer='adam', loss='binary_crossentropy', weighted_metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
+    def train_model(model: tf.keras.models.Model, train_dataset, test_dataset, epochs):
+        model.compile(optimizer='adam',
+                      loss={'action_1': 'bce', 'action_2': 'mae'},
+                      weighted_metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)
