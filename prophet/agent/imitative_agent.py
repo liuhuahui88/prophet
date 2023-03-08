@@ -41,9 +41,10 @@ class ImitativeAgent(Agent):
     def observe(self, history: pd.DataFrame, actions):
         features, labels = self.extract_samples(history, actions, self.window_size)
         features, labels = self.augment_samples(features, labels)
+        weights = self.balance_samples(features, labels)
         features = self.transform_features(features)
 
-        train_dataset, test_dataset = self.create_datasets(features, labels, 0.9)
+        train_dataset, test_dataset = self.create_datasets(features, labels, weights, 0.9)
 
         self.model = self.create_model()
         self.train_model(self.model, train_dataset, test_dataset, 100)
@@ -125,12 +126,25 @@ class ImitativeAgent(Agent):
         return features, labels
 
     @staticmethod
-    def create_datasets(features, labels, train_pct):
+    def balance_samples(features, labels):
+        samples = pd.concat([features['Position'], labels['Action']], axis=1).reset_index()
+        samples.columns = ['Index', 'Position', 'Action']
+
+        statistics = samples.groupby(by=['Position', 'Action'], dropna=False).size().reset_index()
+        statistics.columns = ['Position', 'Action', 'Weight']
+        statistics['Weight'] = statistics['Weight'].sum() / statistics['Weight']
+
+        merge = pd.merge(samples, statistics, on=['Position', 'Action']).sort_values('Index').reset_index()
+
+        return merge['Weight']
+
+    @staticmethod
+    def create_datasets(features, labels, weights, train_pct):
         num_samples = len(labels)
         num_train_samples = int(train_pct * num_samples)
         num_test_samples = num_samples - num_train_samples
 
-        dataset = tf.data.Dataset.from_tensor_slices((features, labels))
+        dataset = tf.data.Dataset.from_tensor_slices((features, labels, weights))
 
         train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
         test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
@@ -158,7 +172,7 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def train_model(model, train_dataset, test_dataset, epochs):
-        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
+        model.compile(optimizer='adam', loss='binary_crossentropy', weighted_metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)
