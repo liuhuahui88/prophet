@@ -3,10 +3,10 @@ import datetime
 
 import pandas as pd
 import tensorflow as tf
-import scipy as sp
 
 from prophet.agent.abstract_agent import Agent
 from prophet.utils.constant import Const
+from prophet.utils.feature_manager import FeatureManager
 
 
 class ImitativeAgent(Agent):
@@ -15,6 +15,9 @@ class ImitativeAgent(Agent):
         self.symbol = symbol
         self.window_size = window_size
         self.price_queue = collections.deque([], maxlen=window_size)
+
+        self.feature_manager = FeatureManager(['price', 'position', 'gain', 'mean', 'std', 'skew'])
+
         self.model_for_train = None
         self.model_for_prediction = None
 
@@ -32,7 +35,7 @@ class ImitativeAgent(Agent):
 
     def predict(self, ctx: Agent.Context):
         features = self.extract_features(ctx, self.symbol, self.price_queue, self.window_size)
-        features = self.transform_features(features)
+        features = self.feature_manager.get(features)
 
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(1)
 
@@ -45,7 +48,7 @@ class ImitativeAgent(Agent):
 
         weights = self.balance_samples(features, labels)
 
-        features = self.transform_features(features)
+        features = self.feature_manager.get(features)
         labels = self.transform_labels(labels)
 
         train_dataset, test_dataset = self.create_datasets(features, labels, weights, 0.9)
@@ -61,36 +64,6 @@ class ImitativeAgent(Agent):
         feature_dict['Position'] = Const.FULL if volume != 0 else Const.EMPTY
 
         return pd.DataFrame(feature_dict, index=[0])
-
-    @staticmethod
-    def transform_features(features: pd.DataFrame):
-        position = features.pop('Position')
-
-        price = features
-
-        gain = pd.DataFrame()
-        for i in range(1, 30):
-            gain['gain{}'.format(i)] = price['Close-0'] / price['Close-{}'.format(i)]
-
-        mean = pd.DataFrame()
-        mean['ma5'] = price[['Close-{}'.format(i) for i in range(5)]].mean(axis=1)
-        mean['ma10'] = price[['Close-{}'.format(i) for i in range(10)]].mean(axis=1)
-        mean['ma20'] = price[['Close-{}'.format(i) for i in range(20)]].mean(axis=1)
-        mean['ma30'] = price[['Close-{}'.format(i) for i in range(30)]].mean(axis=1)
-
-        std = pd.DataFrame()
-        std['std5'] = price[['Close-{}'.format(i) for i in range(5)]].std(axis=1)
-        std['std10'] = price[['Close-{}'.format(i) for i in range(10)]].std(axis=1)
-        std['std20'] = price[['Close-{}'.format(i) for i in range(20)]].std(axis=1)
-        std['std30'] = price[['Close-{}'.format(i) for i in range(30)]].std(axis=1)
-
-        skew = pd.DataFrame()
-        skew['skew5'] = sp.stats.skew(price[['Close-{}'.format(i) for i in range(5)]], axis=1)
-        skew['skew10'] = sp.stats.skew(price[['Close-{}'.format(i) for i in range(10)]], axis=1)
-        skew['skew20'] = sp.stats.skew(price[['Close-{}'.format(i) for i in range(20)]], axis=1)
-        skew['skew30'] = sp.stats.skew(price[['Close-{}'.format(i) for i in range(30)]], axis=1)
-
-        return {'position': position, 'price': price, 'mean': mean, 'std': std, 'skew': skew, 'gain': gain}
 
     @staticmethod
     def transform_labels(labels: pd.DataFrame):
