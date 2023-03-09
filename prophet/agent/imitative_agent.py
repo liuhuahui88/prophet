@@ -7,6 +7,7 @@ import tensorflow as tf
 from prophet.agent.abstract_agent import Agent
 from prophet.utils.constant import Const
 from prophet.utils.feature_manager import FeatureManager
+from prophet.utils.label_manager import LabelManager
 
 
 class ImitativeAgent(Agent):
@@ -16,10 +17,12 @@ class ImitativeAgent(Agent):
         self.window_size = window_size
         self.price_queue = collections.deque([], maxlen=window_size)
 
-        self.feature_manager = FeatureManager(['price', 'position', 'gain', 'mean', 'std', 'skew'])
+        self.feature_manager = FeatureManager(['price', 'gain', 'mean', 'std', 'skew'])
+        self.label_manager = LabelManager(['action_when_empty', 'action_when_full'])
 
         self.model_for_train = None
-        self.model_for_prediction = None
+        self.model_when_full = None
+        self.model_when_empty = None
 
     def handle(self, ctx: Agent.Context):
         self.price_queue.append(ctx.get_prices()[self.symbol])
@@ -34,43 +37,33 @@ class ImitativeAgent(Agent):
             ctx.bid(self.symbol)
 
     def predict(self, ctx: Agent.Context):
-        features = self.extract_features(ctx, self.symbol, self.price_queue, self.window_size)
-        features = self.feature_manager.get(features)
-
+        raw_features = self.extract_raw_features(self.price_queue, self.window_size)
+        features = self.feature_manager.get(raw_features)
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(1)
 
-        score = self.model_for_prediction.predict(dataset, verbose=False).ravel()
+        position = Const.EMPTY if ctx.get_account().get_volume(self.symbol) == 0 else Const.FULL
+        model = self.model_when_empty if position == Const.EMPTY else self.model_when_full
+
+        score = model.predict(dataset, verbose=False).ravel()
         return Const.BID if score > 0.5 else Const.ASK
 
     def observe(self, history: pd.DataFrame, actions):
-        features, labels = self.extract_samples(history, actions, self.window_size)
-        features, labels = self.augment_samples(features, labels)
-
-        weights = self.balance_samples(features, labels)
-
-        features = self.feature_manager.get(features)
-        labels = self.transform_labels(labels)
-
+        raw_features, raw_labels = self.extract_raw_samples(history, actions, self.window_size)
+        features = self.feature_manager.get(raw_features)
+        labels = self.label_manager.get(raw_labels)
+        weights = self.balance_samples(raw_labels)
         train_dataset, test_dataset = self.create_datasets(features, labels, weights, 0.9)
 
-        self.model_for_train, self.model_for_prediction = self.create_model()
+        self.model_for_train, self.model_when_empty, self.model_when_full = self.create_model()
+
         self.train_model(self.model_for_train, train_dataset, test_dataset, 100)
 
     @staticmethod
-    def extract_features(ctx: Agent.Context, symbol, price_queue, window_size):
-        feature_dict = {'Close-{}'.format(i): price_queue[-(i + 1)] for i in range(window_size)}
-
-        volume = ctx.get_account().get_volume(symbol)
-        feature_dict['Position'] = Const.FULL if volume != 0 else Const.EMPTY
-
-        return pd.DataFrame(feature_dict, index=[0])
+    def extract_raw_features(price_queue, window_size):
+        return pd.DataFrame({'Close-{}'.format(i): price_queue[-(i + 1)] for i in range(window_size)}, index=[0])
 
     @staticmethod
-    def transform_labels(labels: pd.DataFrame):
-        return {'action_1': labels, 'action_2': labels}
-
-    @staticmethod
-    def extract_samples(history: pd.DataFrame, actions, window_size):
+    def extract_raw_samples(history: pd.DataFrame, actions, window_size):
         features = pd.DataFrame()
         for i in range(window_size):
             features['Close-{}'.format(i)] = history.shift(i)['Close']
@@ -84,38 +77,15 @@ class ImitativeAgent(Agent):
         return features, labels
 
     @staticmethod
-    def augment_samples(features: pd.DataFrame, labels: pd.DataFrame):
-        full_pos_features, full_pos_labels = ImitativeAgent.augment_samples_inner(features, labels, Const.FULL, Const.BID)
-        empty_pos_features, empty_pos_labels = ImitativeAgent.augment_samples_inner(features, labels, Const.EMPTY, Const.ASK)
+    def balance_samples(labels):
+        labels = labels.reset_index()
+        labels.columns = ['Index', 'Action']
 
-        features = pd.concat([full_pos_features, empty_pos_features])
-        features = features.sort_index(kind='mergesort').reset_index(drop=True)
-
-        labels = pd.concat([full_pos_labels, empty_pos_labels])
-        labels = labels.sort_index(kind='mergesort').reset_index(drop=True)
-
-        return features, labels
-
-    @staticmethod
-    def augment_samples_inner(features: pd.DataFrame, labels: pd.DataFrame, position, default_action):
-        features = features.copy()
-        features['Position'] = position
-
-        labels = labels.copy()
-        labels['Action'].fillna(value=default_action, inplace=True)
-
-        return features, labels
-
-    @staticmethod
-    def balance_samples(features, labels):
-        samples = pd.concat([features['Position'], labels['Action']], axis=1).reset_index()
-        samples.columns = ['Index', 'Position', 'Action']
-
-        statistics = samples.groupby(by=['Position', 'Action'], dropna=False).size().reset_index()
-        statistics.columns = ['Position', 'Action', 'Weight']
+        statistics = labels.groupby(by=['Action'], dropna=False).size().reset_index()
+        statistics.columns = ['Action', 'Weight']
         statistics['Weight'] = statistics['Weight'].sum() / statistics['Weight']
 
-        merge = pd.merge(samples, statistics, on=['Position', 'Action']).sort_values('Index').reset_index()
+        merge = pd.merge(labels, statistics, on=['Action']).sort_values('Index').reset_index()
 
         return merge['Weight']
 
@@ -135,12 +105,11 @@ class ImitativeAgent(Agent):
     @staticmethod
     def create_model():
         input1 = tf.keras.layers.Input(name='price', shape=(30,))
-        input2 = tf.keras.layers.Input(name='position', shape=(1,))
+        input2 = tf.keras.layers.Input(name='gain', shape=(29,))
         input3 = tf.keras.layers.Input(name='mean', shape=(4,))
         input4 = tf.keras.layers.Input(name='std', shape=(4,))
         input5 = tf.keras.layers.Input(name='skew', shape=(4,))
-        input6 = tf.keras.layers.Input(name='gain', shape=(29,))
-        inputs = [input1, input2, input3, input4, input5, input6]
+        inputs = [input1, input2, input3, input4, input5]
 
         x = tf.keras.layers.Concatenate()(inputs)
         x = tf.keras.layers.Dense(128, activation='relu')(x)
@@ -152,25 +121,24 @@ class ImitativeAgent(Agent):
         y = tf.keras.layers.BatchNormalization(momentum=0)(y)
         y = tf.keras.layers.Dense(128, activation='relu')(y)
         y = tf.keras.layers.BatchNormalization(momentum=0)(y)
-        y = tf.keras.layers.Dense(1, activation='sigmoid', name='action_1')(y)
+        y = tf.keras.layers.Dense(1, activation='sigmoid', name='action_when_empty')(y)
 
         z = tf.keras.layers.Dense(128, activation='relu')(x)
         z = tf.keras.layers.BatchNormalization(momentum=0)(z)
         z = tf.keras.layers.Dense(128, activation='relu')(z)
         z = tf.keras.layers.BatchNormalization(momentum=0)(z)
-        z = tf.keras.layers.Dense(1, activation='sigmoid', name='action_2')(z)
-
-        a = tf.keras.layers.Average()([y, z])
+        z = tf.keras.layers.Dense(1, activation='sigmoid', name='action_when_full')(z)
 
         model_for_train = tf.keras.models.Model(inputs=inputs, outputs=[y, z])
-        model_for_prediction = tf.keras.models.Model(inputs=inputs, outputs=a)
+        model_when_empty = tf.keras.models.Model(inputs=inputs, outputs=[y])
+        model_when_full = tf.keras.models.Model(inputs=inputs, outputs=[z])
 
-        return model_for_train, model_for_prediction
+        return model_for_train, model_when_empty, model_when_full
 
     @staticmethod
     def train_model(model: tf.keras.models.Model, train_dataset, test_dataset, epochs):
         model.compile(optimizer='adam',
-                      loss={'action_1': 'bce', 'action_2': 'mae'},
+                      loss={'action_when_empty': 'bce', 'action_when_full': 'bce'},
                       weighted_metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

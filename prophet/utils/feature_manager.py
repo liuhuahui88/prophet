@@ -13,16 +13,13 @@ class FeatureManager:
         self.names = names
 
     def get(self, features: pd.DataFrame):
-        position = features.pop('Position')
-        price = features
-        ctx = {'position': position, 'price': price}
+        ctx = {'price': features}
         return self.graph.compute(self.names, ctx)
 
     @staticmethod
     def create_default_graph():
         graph = Graph()
         graph.register('price')
-        graph.register('position')
         graph.register('gain', FeatureManager.Gain(), ['price'])
         graph.register('mean', FeatureManager.Mean('Close', 'Mean', [5, 10, 20, 30]), ['price'])
         graph.register('std', FeatureManager.Std('Close', 'Std', [5, 10, 20, 30]), ['price'])
