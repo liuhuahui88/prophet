@@ -1,4 +1,3 @@
-import collections
 import datetime
 
 import pandas as pd
@@ -15,7 +14,7 @@ class ImitativeAgent(Agent):
     def __init__(self, symbol, window_size):
         self.symbol = symbol
         self.window_size = window_size
-        self.price_queue = collections.deque([], maxlen=window_size)
+        self.history = pd.DataFrame(columns=['Close'])
 
         self.feature_manager = FeatureManager(['price', 'gain', 'mean', 'std', 'skew'])
         self.label_manager = LabelManager(['action_when_empty', 'action_when_full'])
@@ -25,9 +24,9 @@ class ImitativeAgent(Agent):
         self.model_when_empty = None
 
     def handle(self, ctx: Agent.Context):
-        self.price_queue.append(ctx.get_prices()[self.symbol])
+        self.update(ctx)
 
-        if len(self.price_queue) != self.window_size:
+        if len(self.history) < self.window_size:
             return
 
         action = self.predict(ctx)
@@ -36,9 +35,14 @@ class ImitativeAgent(Agent):
         else:
             ctx.bid(self.symbol)
 
+    def update(self, ctx: Agent.Context):
+        record = pd.DataFrame({'Close': ctx.get_prices()[self.symbol]}, index=[len(self.history)])
+        self.history = pd.concat([self.history, record])
+
     def predict(self, ctx: Agent.Context):
-        raw_features = self.extract_raw_features(self.price_queue, self.window_size)
-        features = self.feature_manager.get(raw_features)
+        history = self.history.tail(self.window_size)
+
+        features = self.feature_manager.extract(history, self.window_size)
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(1)
 
         position = Const.EMPTY if ctx.get_account().get_volume(self.symbol) == 0 else Const.FULL
@@ -48,54 +52,24 @@ class ImitativeAgent(Agent):
         return Const.BID if score > 0.5 else Const.ASK
 
     def observe(self, history: pd.DataFrame, actions):
-        raw_features, raw_labels = self.extract_raw_samples(history, actions, self.window_size)
-        features = self.feature_manager.get(raw_features)
-        labels = self.label_manager.get(raw_labels)
-        weights = self.balance_samples(raw_labels)
-        train_dataset, test_dataset = self.create_datasets(features, labels, weights, 0.9)
+        history = history.copy()
+        history['Action'] = actions
+
+        features = self.feature_manager.extract(history, self.window_size)
+        labels = self.label_manager.extract(history, self.window_size)
+        num_samples = len(history) - self.window_size + 1
+        train_dataset, test_dataset = self.create_datasets(features, labels, num_samples, 0.9)
 
         self.model_for_train, self.model_when_empty, self.model_when_full = self.create_model()
 
         self.train_model(self.model_for_train, train_dataset, test_dataset, 100)
 
     @staticmethod
-    def extract_raw_features(price_queue, window_size):
-        return pd.DataFrame({'Close-{}'.format(i): price_queue[-(i + 1)] for i in range(window_size)}, index=[0])
-
-    @staticmethod
-    def extract_raw_samples(history: pd.DataFrame, actions, window_size):
-        features = pd.DataFrame()
-        for i in range(window_size):
-            features['Close-{}'.format(i)] = history.shift(i)['Close']
-        features = features[window_size - 1:]
-        features = features.reset_index(drop=True)
-
-        labels = pd.DataFrame()
-        labels['Action'] = actions[window_size - 1:]
-        labels = labels.reset_index(drop=True)
-
-        return features, labels
-
-    @staticmethod
-    def balance_samples(labels):
-        labels = labels.reset_index()
-        labels.columns = ['Index', 'Action']
-
-        statistics = labels.groupby(by=['Action'], dropna=False).size().reset_index()
-        statistics.columns = ['Action', 'Weight']
-        statistics['Weight'] = statistics['Weight'].sum() / statistics['Weight']
-
-        merge = pd.merge(labels, statistics, on=['Action']).sort_values('Index').reset_index()
-
-        return merge['Weight']
-
-    @staticmethod
-    def create_datasets(features, labels, weights, train_pct):
-        num_samples = len(weights)
+    def create_datasets(features, labels, num_samples, train_pct):
         num_train_samples = int(train_pct * num_samples)
         num_test_samples = num_samples - num_train_samples
 
-        dataset = tf.data.Dataset.from_tensor_slices((features, labels, weights))
+        dataset = tf.data.Dataset.from_tensor_slices((features, labels))
 
         train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
         test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
@@ -139,7 +113,7 @@ class ImitativeAgent(Agent):
     def train_model(model: tf.keras.models.Model, train_dataset, test_dataset, epochs):
         model.compile(optimizer='adam',
                       loss={'action_when_empty': 'bce', 'action_when_full': 'bce'},
-                      weighted_metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
+                      metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)

@@ -9,11 +9,17 @@ from prophet.utils.graph import Graph
 class FeatureManager:
 
     def __init__(self, names, graph=None):
-        self.graph = graph if graph is not None else self.create_default_graph()
         self.names = names
+        self.graph = graph if graph is not None else self.create_default_graph()
 
-    def get(self, features: pd.DataFrame):
-        ctx = {'price': features}
+    def extract(self, history: pd.DataFrame, window_size):
+        price = pd.DataFrame()
+        for i in range(window_size):
+            price['Close-{}'.format(i)] = history.shift(i)['Close']
+        price = price[window_size - 1:]
+        price = price.reset_index(drop=True)
+
+        ctx = {'price': price}
         return self.graph.compute(self.names, ctx)
 
     @staticmethod

@@ -7,11 +7,16 @@ from prophet.utils.graph import Graph
 class LabelManager:
 
     def __init__(self, names, graph=None):
-        self.graph = graph if graph is not None else self.create_default_graph()
         self.names = names
+        self.graph = graph if graph is not None else self.create_default_graph()
 
-    def get(self, labels: pd.DataFrame):
-        ctx = {'action': labels}
+    def extract(self, history: pd.DataFrame, window_size):
+        action = pd.DataFrame()
+        action['Action'] = history['Action']
+        action = action[window_size - 1:]
+        action = action.reset_index(drop=True)
+
+        ctx = {'action': action}
         return self.graph.compute(self.names, ctx)
 
     @staticmethod
