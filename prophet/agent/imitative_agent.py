@@ -5,19 +5,22 @@ import tensorflow as tf
 
 from prophet.agent.abstract_agent import Agent
 from prophet.utils.constant import Const
-from prophet.utils.feature_manager import FeatureManager
-from prophet.utils.label_manager import LabelManager
+from prophet.data.data_extractor import DataExtractor
 
 
 class ImitativeAgent(Agent):
 
-    def __init__(self, symbol, window_size):
+    WINDOW_SIZE = 30
+
+    def __init__(self, symbol):
         self.symbol = symbol
-        self.window_size = window_size
         self.history = pd.DataFrame(columns=['Close'])
 
-        self.feature_manager = FeatureManager(['price', 'gain', 'mean', 'std', 'skew'])
-        self.label_manager = LabelManager(['action_when_empty', 'action_when_full'])
+        feature_names = ['price', 'past_price', 'past_log_gain', 'mean_price', 'std_price', 'skew_price']
+        self.feature_extractor = DataExtractor(feature_names)
+
+        label_names = ['action_when_empty', 'action_when_full']
+        self.label_extractor = DataExtractor(label_names)
 
         self.model_for_train = None
         self.model_when_full = None
@@ -25,9 +28,6 @@ class ImitativeAgent(Agent):
 
     def handle(self, ctx: Agent.Context):
         self.update(ctx)
-
-        if len(self.history) < self.window_size:
-            return
 
         action = self.predict(ctx)
         if action == Const.ASK:
@@ -40,25 +40,28 @@ class ImitativeAgent(Agent):
         self.history = pd.concat([self.history, record])
 
     def predict(self, ctx: Agent.Context):
-        history = self.history.tail(self.window_size)
+        # accelerate the prediction by generating the latest rather than the whole samples
+        history = self.history.tail(self.WINDOW_SIZE)
 
-        features = self.feature_manager.extract(history, self.window_size)
-        dataset = tf.data.Dataset.from_tensor_slices(features).batch(1)
+        features = self.feature_extractor.extract(history)
+        dataset = tf.data.Dataset.from_tensor_slices(features).batch(len(history))
 
+        # select the right model based on current position
         position = Const.EMPTY if ctx.get_account().get_volume(self.symbol) == 0 else Const.FULL
         model = self.model_when_empty if position == Const.EMPTY else self.model_when_full
 
-        score = model.predict(dataset, verbose=False).ravel()
+        # select the score for the last sample in prediction result
+        score = model.predict(dataset, verbose=False).ravel()[-1]
+
         return Const.BID if score > 0.5 else Const.ASK
 
     def observe(self, history: pd.DataFrame, actions):
         history = history.copy()
         history['Action'] = actions
 
-        features = self.feature_manager.extract(history, self.window_size)
-        labels = self.label_manager.extract(history, self.window_size)
-        num_samples = len(history) - self.window_size + 1
-        train_dataset, test_dataset = self.create_datasets(features, labels, num_samples, 0.9)
+        features = self.feature_extractor.extract(history)
+        labels = self.label_extractor.extract(history)
+        train_dataset, test_dataset = self.create_datasets(features, labels, len(history), 0.9)
 
         self.model_for_train, self.model_when_empty, self.model_when_full = self.create_model()
 
@@ -78,12 +81,13 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def create_model():
-        input1 = tf.keras.layers.Input(name='price', shape=(30,))
-        input2 = tf.keras.layers.Input(name='gain', shape=(29,))
-        input3 = tf.keras.layers.Input(name='mean', shape=(4,))
-        input4 = tf.keras.layers.Input(name='std', shape=(4,))
-        input5 = tf.keras.layers.Input(name='skew', shape=(4,))
-        inputs = [input1, input2, input3, input4, input5]
+        input0 = tf.keras.layers.Input(name='price', shape=(1,))
+        input1 = tf.keras.layers.Input(name='past_price', shape=(29,))
+        input2 = tf.keras.layers.Input(name='past_log_gain', shape=(29,))
+        input3 = tf.keras.layers.Input(name='mean_price', shape=(4,))
+        input4 = tf.keras.layers.Input(name='std_price', shape=(4,))
+        input5 = tf.keras.layers.Input(name='skew_price', shape=(4,))
+        inputs = [input0, input1, input2, input3, input4, input5]
 
         x = tf.keras.layers.Concatenate()(inputs)
         x = tf.keras.layers.Dense(128, activation='relu')(x)

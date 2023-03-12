@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     result = bt.back_test(symbol, start_date, train_end_date)
 
-    imitative_agent = ImitativeAgent(symbol, 30)
+    imitative_agent = ImitativeAgent(symbol)
     imitative_agent.observe(result.history, result.cases[0].actions)
     bt.register('IMI', imitative_agent)
 
