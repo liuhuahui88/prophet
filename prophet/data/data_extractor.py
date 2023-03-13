@@ -3,6 +3,7 @@ from abc import abstractmethod
 import pandas as pd
 import numpy as np
 
+from prophet.utils.action_generator import ActionGenerator
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 
@@ -36,10 +37,35 @@ class DataExtractor:
 
         graph.register('next_log_gain', DataExtractor.Diff(1, future=True), ['log_price'])
         graph.register('next_direction', DataExtractor.Sign(), ['next_log_gain'])
-        graph.register('action_when_empty', DataExtractor.Fill(Const.ASK), ['action'])
-        graph.register('action_when_full', DataExtractor.Fill(Const.BID), ['action'])
+
+        graph.register('perfect_action', DataExtractor.PerfectAction(0.01), ['price'])
+
+        graph.register('action_when_empty', DataExtractor.G('EmptyCumGains', 'EmptyActions', 'EmptyAdvantages'), ['perfect_action'])
+        graph.register('action_when_full', DataExtractor.G('FullCumGains', 'FullActions', 'FullAdvantages'), ['perfect_action'])
 
         return graph
+
+    class G(Graph.Function):
+
+        def __init__(self, cum_gains_name, actions_name, advantages_name):
+            self.cum_gains_name = cum_gains_name
+            self.actions_name = actions_name
+            self.advantages_name = advantages_name
+
+        def compute(self, inputs):
+            output_df = pd.DataFrame()
+            cum_gains = inputs[0][self.cum_gains_name]
+            actions = inputs[0][self.actions_name]
+            advantages = inputs[0][self.advantages_name]
+
+            print(actions.head())
+            actions = actions.apply(lambda x: -1 if x == 0 else 1)
+            output_df['Adv'] = actions * advantages
+
+            print(actions.head())
+            print(advantages.head())
+            print(output_df.head())
+            return output_df
 
     class Get(Graph.Function):
 
@@ -132,3 +158,25 @@ class DataExtractor:
 
         def compute(self, inputs):
             return pd.concat([function.compute(inputs) for function in self.functions], axis=1)
+
+    class PerfectAction(Graph.Function):
+
+        def __init__(self, commission_rate):
+            self.action_generator = ActionGenerator(commission_rate)
+
+        def compute(self, inputs):
+            cum_gains, actions, advantages = self.action_generator.generate(inputs[0].iloc[:, 0])
+            df = pd.DataFrame({
+                'EmptyCumGains': cum_gains[Const.EMPTY],
+                'FullCumGains': cum_gains[Const.FULL],
+
+                'EmptyActions': actions[Const.EMPTY],
+                'FullActions': actions[Const.FULL],
+
+                'EmptyAdvantages': advantages[Const.EMPTY],
+                'FullAdvantages': advantages[Const.FULL],
+            })
+            # df.to_csv('perfect_action.csv', index=False)
+            print(df)
+            return df
+

@@ -65,7 +65,7 @@ class ImitativeAgent(Agent):
 
         self.model_for_train, self.model_when_empty, self.model_when_full = self.create_model()
 
-        self.train_model(self.model_for_train, train_dataset, test_dataset, 100)
+        self.train_model(self.model_for_train, train_dataset, test_dataset, 500)
 
     @staticmethod
     def create_datasets(features, labels, num_samples, train_pct):
@@ -115,14 +115,17 @@ class ImitativeAgent(Agent):
 
     @staticmethod
     def train_model(model: tf.keras.models.Model, train_dataset, test_dataset, epochs):
+        def loss_fn(y_true, y_pred):
+            return tf.reduce_mean(-y_true * y_pred, axis=-1)
+
         model.compile(optimizer='adam',
-                      loss={'action_when_empty': 'bce', 'action_when_full': 'bce'},
+                      loss={'action_when_empty': loss_fn, 'action_when_full': loss_fn},
                       metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)
 
-        early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
+        early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=500)
 
         model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False,
                   callbacks=[tensor_board_callback, early_stopping_callback])
