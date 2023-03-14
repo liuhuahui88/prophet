@@ -23,7 +23,7 @@ class DataExtractor:
         graph.register('history')
 
         graph.register('price', DataExtractor.Get('Close', 'Price'), ['history'])
-        graph.register('action', DataExtractor.Get('Action'), ['history'])
+        graph.register('expert_action', DataExtractor.Get('ExpertAction'), ['history'])
 
         graph.register('past_price', DataExtractor.Merge([DataExtractor.Shift(i) for i in range(1, 30)]), ['price'])
 
@@ -36,8 +36,9 @@ class DataExtractor:
 
         graph.register('next_log_gain', DataExtractor.Diff(1, future=True), ['log_price'])
         graph.register('next_direction', DataExtractor.Sign(), ['next_log_gain'])
-        graph.register('action_when_empty', DataExtractor.Fill(Const.ASK), ['action'])
-        graph.register('action_when_full', DataExtractor.Fill(Const.BID), ['action'])
+
+        graph.register('expert_action_when_empty', DataExtractor.Fill(Const.ASK), ['expert_action'])
+        graph.register('expert_action_when_full', DataExtractor.Fill(Const.BID), ['expert_action'])
 
         return graph
 

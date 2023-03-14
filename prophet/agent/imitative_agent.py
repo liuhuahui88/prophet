@@ -19,7 +19,7 @@ class ImitativeAgent(Agent):
         feature_names = ['price', 'past_price', 'past_log_gain', 'mean_price', 'std_price', 'skew_price']
         self.feature_extractor = DataExtractor(feature_names)
 
-        label_names = ['action_when_empty', 'action_when_full']
+        label_names = ['expert_action_when_empty', 'expert_action_when_full']
         self.label_extractor = DataExtractor(label_names)
 
         self.model_for_train = None
@@ -55,9 +55,9 @@ class ImitativeAgent(Agent):
 
         return Const.BID if score > 0.5 else Const.ASK
 
-    def observe(self, history: pd.DataFrame, actions):
+    def observe(self, history: pd.DataFrame, expert_actions):
         history = history.copy()
-        history['Action'] = actions
+        history['ExpertAction'] = expert_actions
 
         features = self.feature_extractor.extract(history)
         labels = self.label_extractor.extract(history)
@@ -99,13 +99,13 @@ class ImitativeAgent(Agent):
         y = tf.keras.layers.BatchNormalization(momentum=0)(y)
         y = tf.keras.layers.Dense(128, activation='relu')(y)
         y = tf.keras.layers.BatchNormalization(momentum=0)(y)
-        y = tf.keras.layers.Dense(1, activation='sigmoid', name='action_when_empty')(y)
+        y = tf.keras.layers.Dense(1, activation='sigmoid', name='expert_action_when_empty')(y)
 
         z = tf.keras.layers.Dense(128, activation='relu')(x)
         z = tf.keras.layers.BatchNormalization(momentum=0)(z)
         z = tf.keras.layers.Dense(128, activation='relu')(z)
         z = tf.keras.layers.BatchNormalization(momentum=0)(z)
-        z = tf.keras.layers.Dense(1, activation='sigmoid', name='action_when_full')(z)
+        z = tf.keras.layers.Dense(1, activation='sigmoid', name='expert_action_when_full')(z)
 
         model_for_train = tf.keras.models.Model(inputs=inputs, outputs=[y, z])
         model_when_empty = tf.keras.models.Model(inputs=inputs, outputs=[y])
@@ -116,7 +116,7 @@ class ImitativeAgent(Agent):
     @staticmethod
     def train_model(model: tf.keras.models.Model, train_dataset, test_dataset, epochs):
         model.compile(optimizer='adam',
-                      loss={'action_when_empty': 'bce', 'action_when_full': 'bce'},
+                      loss={'expert_action_when_empty': 'bce', 'expert_action_when_full': 'bce'},
                       metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
 
         logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
