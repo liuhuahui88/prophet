@@ -3,6 +3,7 @@ from abc import abstractmethod
 import pandas as pd
 import numpy as np
 
+from prophet.utils.action_generator import ActionGenerator
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 
@@ -23,7 +24,6 @@ class DataExtractor:
         graph.register('history')
 
         graph.register('price', DataExtractor.Get('Close', 'Price'), ['history'])
-        graph.register('expert_action', DataExtractor.Get('ExpertAction'), ['history'])
 
         graph.register('past_price', DataExtractor.Merge([DataExtractor.Shift(i) for i in range(1, 30)]), ['price'])
 
@@ -37,8 +37,13 @@ class DataExtractor:
         graph.register('next_log_gain', DataExtractor.Diff(1, future=True), ['log_price'])
         graph.register('next_direction', DataExtractor.Sign(), ['next_log_gain'])
 
+        graph.register('expert_action', DataExtractor.Get('ExpertAction', 'Action'), ['history'])
         graph.register('expert_action_when_empty', DataExtractor.Fill(Const.ASK), ['expert_action'])
         graph.register('expert_action_when_full', DataExtractor.Fill(Const.BID), ['expert_action'])
+
+        graph.register('perfect_action', DataExtractor.PerfectAction(0.01), ['price'])
+        graph.register('perfect_action_when_empty', DataExtractor.Get('EmptyAction', 'Action'), ['perfect_action'])
+        graph.register('perfect_action_when_full', DataExtractor.Get('FullAction', 'Action'), ['perfect_action'])
 
         return graph
 
@@ -133,3 +138,22 @@ class DataExtractor:
 
         def compute(self, inputs):
             return pd.concat([function.compute(inputs) for function in self.functions], axis=1)
+
+    class PerfectAction(Graph.Function):
+
+        def __init__(self, commission_rate):
+            self.action_generator = ActionGenerator(commission_rate)
+
+        def compute(self, inputs):
+            cum_gains, actions, advantages = self.action_generator.generate(inputs[0].iloc[:, 0])
+            df = pd.DataFrame({
+                'EmptyCumGain': cum_gains[Const.EMPTY],
+                'FullCumGain': cum_gains[Const.FULL],
+
+                'EmptyAction': actions[Const.EMPTY],
+                'FullAction': actions[Const.FULL],
+
+                'EmptyAdvantage': advantages[Const.EMPTY],
+                'FullAdvantage': advantages[Const.FULL],
+            })
+            return df
