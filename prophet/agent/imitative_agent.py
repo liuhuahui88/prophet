@@ -1,11 +1,9 @@
-import datetime
-
 import pandas as pd
 import tensorflow as tf
 
 from prophet.agent.abstract_agent import Agent
+from prophet.data.data_predictor import DataPredictor
 from prophet.utils.constant import Const
-from prophet.data.data_extractor import DataExtractor
 
 
 class ImitativeAgent(Agent):
@@ -15,16 +13,7 @@ class ImitativeAgent(Agent):
     def __init__(self, symbol):
         self.symbol = symbol
         self.history = pd.DataFrame(columns=['Close'])
-
-        feature_names = ['price', 'past_price', 'past_log_gain', 'mean_price', 'std_price', 'skew_price']
-        self.feature_extractor = DataExtractor(feature_names)
-
-        label_names = ['expert_action_when_empty', 'expert_action_when_full']
-        self.label_extractor = DataExtractor(label_names)
-
-        self.model_for_train = None
-        self.model_when_full = None
-        self.model_when_empty = None
+        self.data_predictor = DataPredictor(self.create_model())
 
     def handle(self, ctx: Agent.Context):
         self.update(ctx)
@@ -40,18 +29,15 @@ class ImitativeAgent(Agent):
         self.history = pd.concat([self.history, record])
 
     def predict(self, ctx: Agent.Context):
-        # accelerate the prediction by generating the latest rather than the whole samples
+        position = Const.EMPTY if ctx.get_account().get_volume(self.symbol) == 0 else Const.FULL
+
+        # accelerate the prediction by processing the latest history only
         history = self.history.tail(self.WINDOW_SIZE)
 
-        features = self.feature_extractor.extract(history)
-        dataset = tf.data.Dataset.from_tensor_slices(features).batch(len(history))
-
-        # select the right model based on current position
-        position = Const.EMPTY if ctx.get_account().get_volume(self.symbol) == 0 else Const.FULL
-        model = self.model_when_empty if position == Const.EMPTY else self.model_when_full
+        result = self.data_predictor.predict(history)
 
         # select the score for the last sample in prediction result
-        score = model.predict(dataset, verbose=False).ravel()[-1]
+        score = result[position].ravel()[-1]
 
         return Const.BID if score > 0.5 else Const.ASK
 
@@ -59,25 +45,7 @@ class ImitativeAgent(Agent):
         history = history.copy()
         history['ExpertAction'] = expert_actions
 
-        features = self.feature_extractor.extract(history)
-        labels = self.label_extractor.extract(history)
-        train_dataset, test_dataset = self.create_datasets(features, labels, len(history), 0.9)
-
-        self.model_for_train, self.model_when_empty, self.model_when_full = self.create_model()
-
-        self.train_model(self.model_for_train, train_dataset, test_dataset, 100)
-
-    @staticmethod
-    def create_datasets(features, labels, num_samples, train_pct):
-        num_train_samples = int(train_pct * num_samples)
-        num_test_samples = num_samples - num_train_samples
-
-        dataset = tf.data.Dataset.from_tensor_slices((features, labels))
-
-        train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
-        test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
-
-        return train_dataset, test_dataset
+        self.data_predictor.train(history, 0.9, 100, 100)
 
     @staticmethod
     def create_model():
@@ -107,27 +75,10 @@ class ImitativeAgent(Agent):
         z = tf.keras.layers.BatchNormalization(momentum=0)(z)
         z = tf.keras.layers.Dense(1, activation='sigmoid', name='expert_action_when_full')(z)
 
-        model_for_train = tf.keras.models.Model(inputs=inputs, outputs=[y, z])
-        model_when_empty = tf.keras.models.Model(inputs=inputs, outputs=[y])
-        model_when_full = tf.keras.models.Model(inputs=inputs, outputs=[z])
+        model = tf.keras.models.Model(inputs=inputs, outputs=[y, z])
 
-        return model_for_train, model_when_empty, model_when_full
-
-    @staticmethod
-    def train_model(model: tf.keras.models.Model, train_dataset, test_dataset, epochs):
         model.compile(optimizer='adam',
                       loss={'expert_action_when_empty': 'bce', 'expert_action_when_full': 'bce'},
                       metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
-
-        logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)
-
-        early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
-
-        model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False,
-                  callbacks=[tensor_board_callback, early_stopping_callback])
-
-        model.evaluate(train_dataset)
-        model.evaluate(test_dataset)
 
         return model
