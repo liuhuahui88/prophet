@@ -19,6 +19,9 @@ class DataExtractor:
 
     @staticmethod
     def create_default_graph():
+        commission_rate = 0.01
+        discount = (1 - commission_rate) / (1 + commission_rate)
+
         graph = Graph()
 
         graph.register('history')
@@ -41,7 +44,13 @@ class DataExtractor:
         graph.register('expert_action_when_empty', DataExtractor.Fill(Const.ASK), ['expert_action'])
         graph.register('expert_action_when_full', DataExtractor.Fill(Const.BID), ['expert_action'])
 
-        graph.register('perfect_action', DataExtractor.PerfectAction(0.01), ['price'])
+        graph.register('days_to_cross_ub_of_bid', DataExtractor.DaysToCross(1, 1 / discount), ['price'])
+        graph.register('days_to_cross_lb_of_bid', DataExtractor.DaysToCross(-1, 1), ['price'])
+
+        graph.register('days_to_cross_ub_of_ask', DataExtractor.DaysToCross(1, 1), ['price'])
+        graph.register('days_to_cross_lb_of_ask', DataExtractor.DaysToCross(-1, discount), ['price'])
+
+        graph.register('perfect_action', DataExtractor.PerfectAction(commission_rate), ['price'])
         graph.register('perfect_action_when_empty', DataExtractor.Get('EmptyAction', 'Action'), ['perfect_action'])
         graph.register('perfect_action_when_full', DataExtractor.Get('FullAction', 'Action'), ['perfect_action'])
 
@@ -139,6 +148,25 @@ class DataExtractor:
         def compute(self, inputs):
             return pd.concat([function.compute(inputs) for function in self.functions], axis=1)
 
+    class DaysToCross(Graph.Function):
+
+        def __init__(self, direction, multiplier):
+            self.direction = direction
+            self.multiplier = multiplier
+
+        def compute(self, inputs):
+            prices = inputs[0].iloc[:, 0]
+            result = []
+            for i in range(len(prices)):
+                days_to_cross = float('inf')
+                for j in range(i + 1, len(prices)):
+                    if self.direction * (prices[j] - prices[i] * self.multiplier) > 0:
+                        days_to_cross = j - i
+                        break
+                result.append(days_to_cross)
+            df = pd.DataFrame({'DaysToCross': result})
+            return df
+
     class PerfectAction(Graph.Function):
 
         def __init__(self, commission_rate):
@@ -146,14 +174,8 @@ class DataExtractor:
 
         def compute(self, inputs):
             cum_gains, actions, advantages = self.action_generator.generate(inputs[0].iloc[:, 0])
-            df = pd.DataFrame({
-                'EmptyCumGain': cum_gains[Const.EMPTY],
-                'FullCumGain': cum_gains[Const.FULL],
-
-                'EmptyAction': actions[Const.EMPTY],
-                'FullAction': actions[Const.FULL],
-
-                'EmptyAdvantage': advantages[Const.EMPTY],
-                'FullAdvantage': advantages[Const.FULL],
+            df = pd.DataFrame({'EmptyCumGain': cum_gains[Const.EMPTY], 'FullCumGain': cum_gains[Const.FULL],
+                               'EmptyAction': actions[Const.EMPTY], 'FullAction': actions[Const.FULL],
+                               'EmptyAdvantage': advantages[Const.EMPTY], 'FullAdvantage': advantages[Const.FULL],
             })
             return df
