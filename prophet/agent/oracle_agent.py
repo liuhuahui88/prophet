@@ -1,36 +1,30 @@
 from prophet.agent.abstract_agent import Agent
+from prophet.data.data_extractor import DataExtractor
 from prophet.data.data_storage import StockDataStorage
+from prophet.utils.constant import Const
 
 
 class OracleAgent(Agent):
 
     CASH_UPPER_BOUND = 100000000
 
-    def __init__(self, symbol, storage: StockDataStorage, discount):
+    def __init__(self, symbol, storage: StockDataStorage):
         self.symbol = symbol
         self.history = storage.load_history(symbol)
         self.indexes = {self.history.iloc[i].Date: i for i in range(len(self.history))}
-        self.discount = discount
+
+        data_extractor = DataExtractor(['indicator_of_bid', 'indicator_of_ask'])
+        data = data_extractor.extract(self.history)
+        self.indicator_of_bid = data['indicator_of_bid']
+        self.indicator_of_ask = data['indicator_of_ask']
 
     def handle(self, ctx: Agent.Context):
         if ctx.get_account().get_cash() > OracleAgent.CASH_UPPER_BOUND:
             return
 
-        if self.f(ctx.get_date(), self.discount, 1):
+        idx = self.indexes[ctx.get_date()]
+
+        if self.indicator_of_ask['Indicator'].iloc[idx] == Const.DOWN:
             ctx.ask(self.symbol)
-        elif not self.f(ctx.get_date(), 1, 1 / self.discount):
+        elif self.indicator_of_bid['Indicator'].iloc[idx] == Const.UP:
             ctx.bid(self.symbol)
-
-    def f(self, date, min_gain, max_gain):
-        index = self.indexes[date]
-        max_index = len(self.history)
-
-        closes = self.history['Close']
-        base = closes.iloc[index]
-        for i in range(index, max_index):
-            gain = closes.iloc[i] / base
-            if gain < min_gain:
-                return True
-            if gain > max_gain:
-                return False
-        return True

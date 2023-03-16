@@ -17,7 +17,7 @@ if __name__ == '__main__':
     train_end_date = '2011-01-01'
     test_end_date = '2012-01-01'
 
-    bt.register('ORA', OracleAgent(symbol, storage, discount))
+    bt.register('ORA', OracleAgent(symbol, storage))
 
     result = bt.back_test(symbol, start_date, train_end_date)
 
