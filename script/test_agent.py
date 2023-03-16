@@ -1,5 +1,5 @@
 from prophet.agent.buy_and_hold_agent import BuyAndHoldAgent
-from prophet.agent.buy_and_sell_agent import BuyAndSellAgent
+from prophet.agent.switch_agent import SwitchAgent
 from prophet.agent.moving_average_agent import MovingAverageAgent
 from prophet.agent.perfect_indicator_agent import PerfectIndicatorAgent
 from prophet.agent.perfect_action_agent import PerfectActionAgent
@@ -16,8 +16,8 @@ if __name__ == '__main__':
     symbol = '600000'
 
     bt.register('B&H', BuyAndHoldAgent(symbol))
-    bt.register('B&S', BuyAndSellAgent(symbol, False))
-    bt.register('S&B', BuyAndSellAgent(symbol, True))
+    bt.register('B&S', SwitchAgent(symbol, False))
+    bt.register('S&B', SwitchAgent(symbol, True))
     bt.register('MAA', MovingAverageAgent(symbol, 5, 10))
     bt.register('PIA', PerfectIndicatorAgent(symbol, storage))
     bt.register('PAA', PerfectActionAgent(symbol, storage))

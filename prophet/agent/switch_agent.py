@@ -1,7 +1,7 @@
 from prophet.agent.abstract_agent import Agent
 
 
-class BuyAndSellAgent(Agent):
+class SwitchAgent(Agent):
 
     def __init__(self, symbol, is_selling=False):
         self.symbol = symbol

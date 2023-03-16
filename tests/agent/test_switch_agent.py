@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from tests.agent.agent_context import *
 
-from prophet.agent.buy_and_sell_agent import *
+from prophet.agent.switch_agent import *
 
 
 class TestBuyAndSellAgent(TestCase):
@@ -10,7 +10,7 @@ class TestBuyAndSellAgent(TestCase):
     def test_handle(self):
         symbol = '600000'
 
-        agent = BuyAndSellAgent(symbol)
+        agent = SwitchAgent(symbol)
         account = Account(1000)
 
         ctx1 = AgentContextForTest(account, {symbol: 300}, '2020-01-01')
