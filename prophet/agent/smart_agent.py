@@ -39,7 +39,7 @@ class SmartAgent(Agent):
         # select the score for the last sample in prediction result
         score = result[position].ravel()[-1]
 
-        return Const.BID if score > 0.5 else Const.ASK
+        return Const.BID if score > 0 else Const.ASK
 
     def observe(self, history: pd.DataFrame):
         self.data_predictor.train(history, 0.9, 100, 100)
@@ -64,18 +64,39 @@ class SmartAgent(Agent):
         y = tf.keras.layers.BatchNormalization(momentum=0)(y)
         y = tf.keras.layers.Dense(128, activation='relu')(y)
         y = tf.keras.layers.BatchNormalization(momentum=0)(y)
-        y = tf.keras.layers.Dense(1, activation='sigmoid', name='perfect_action_when_empty')(y)
+        y = tf.keras.layers.Dense(1, activation='linear', name='perfect_advantage_when_empty')(y)
 
         z = tf.keras.layers.Dense(128, activation='relu')(x)
         z = tf.keras.layers.BatchNormalization(momentum=0)(z)
         z = tf.keras.layers.Dense(128, activation='relu')(z)
         z = tf.keras.layers.BatchNormalization(momentum=0)(z)
-        z = tf.keras.layers.Dense(1, activation='sigmoid', name='perfect_action_when_full')(z)
+        z = tf.keras.layers.Dense(1, activation='linear', name='perfect_advantage_when_full')(z)
 
         model = tf.keras.models.Model(inputs=inputs, outputs=[y, z])
 
+        def bce(y_true, y_pred):
+            action_true = (tf.sign(y_true) + 1) / 2
+            return tf.keras.losses.binary_crossentropy(action_true, y_pred, from_logits=True)
+
+        def soft_advt(y_true, y_pred):
+            return tf.reduce_mean(tf.abs(y_true) * tf.sigmoid(-tf.sign(y_true) * y_pred))
+
+        def hinge_advt(y_true, y_pred):
+            return tf.reduce_mean(tf.abs(y_true) * tf.keras.activations.relu(-tf.sign(y_true) * y_pred + 1))
+
+        def hard_advt(y_true, y_pred):
+            return tf.reduce_mean(tf.abs(y_true) * (tf.sign(-y_true * y_pred) + 1) / 2)
+
+        def avg_true(y_true, y_pred):
+            return tf.reduce_mean((tf.sign(y_true) + 1) / 2, axis=-1)
+
+        def avg_pred(y_true, y_pred):
+            return tf.reduce_mean(y_pred, axis=-1)
+
         model.compile(optimizer='adam',
-                      loss={'perfect_action_when_empty': 'bce', 'perfect_action_when_full': 'bce'},
-                      metrics=['accuracy', 'AUC', 'Precision', 'Recall'])
+                      loss={
+                          'perfect_advantage_when_empty': bce,
+                          'perfect_advantage_when_full': bce},
+                      metrics=[hard_advt, hinge_advt, soft_advt, avg_true, avg_pred])
 
         return model
