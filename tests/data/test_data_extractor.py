@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from prophet.data.data_extractor import DataExtractor
+from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 
 
@@ -50,10 +51,12 @@ class TestDataExtractor(TestCase):
         x = [1, 2, 3, 4, 5]
 
         self.check(Sum(1), x, x)
-        self.check(Sum(1, future=True), x, x)
+        self.check(Sum(1, mode=Const.FUTURE), x, x)
 
         self.check(Sum(2), x, [1, 3, 5, 7, 9])
-        self.check(Sum(2, future=True), x, [3, 5, 7, 9, 5])
+        self.check(Sum(2, mode=Const.FUTURE), x, [3, 5, 7, 9, 5])
+
+        self.check(Sum(3, mode=Const.CENTER), x, [3, 6, 9, 12, 9])
 
     def test_merge(self):
         x = pd.DataFrame({'n': [1, 2, 3], 'm': [4, 5, 6]})

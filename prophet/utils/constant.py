@@ -8,3 +8,7 @@ class Const:
 
     UP = 1
     DOWN = -1
+
+    PAST = -1
+    CENTER = 0
+    FUTURE = 1

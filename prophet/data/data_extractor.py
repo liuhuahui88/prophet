@@ -114,16 +114,17 @@ class DataExtractor:
 
     class Agg(Graph.Function):
 
-        def __init__(self, window_size, future=False):
+        def __init__(self, window_size, mode=Const.PAST):
             self.window_size = window_size
-            self.future = future
+            self.mode = mode
 
         def compute(self, inputs):
             input_df = inputs[0]
-            if self.future:
+            if self.mode == Const.FUTURE:
                 input_df = input_df.loc[::-1]
-            output_df = self.aggregate(input_df.rolling(self.window_size, min_periods=1))
-            if self.future:
+            rolling = input_df.rolling(self.window_size, min_periods=1, center=(self.mode == Const.CENTER))
+            output_df = self.aggregate(rolling)
+            if self.mode == Const.FUTURE:
                 output_df = output_df.loc[::-1]
             return output_df
 
