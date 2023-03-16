@@ -5,3 +5,6 @@ class Const:
 
     FULL = 1
     EMPTY = 0
+
+    UP = 1
+    DOWN = -1

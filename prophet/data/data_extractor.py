@@ -50,6 +50,9 @@ class DataExtractor:
         graph.register('days_to_cross_ub_of_ask', DataExtractor.DaysToCross(1, 1), ['price'])
         graph.register('days_to_cross_lb_of_ask', DataExtractor.DaysToCross(-1, discount), ['price'])
 
+        graph.register('indicator_of_bid', DataExtractor.Indicator(1, 1 / discount), ['price'])
+        graph.register('indicator_of_ask', DataExtractor.Indicator(discount, 1), ['price'])
+
         graph.register('perfect_action', DataExtractor.PerfectAction(commission_rate), ['price'])
         graph.register('perfect_action_when_empty', DataExtractor.Get('EmptyAction', 'Action'), ['perfect_action'])
         graph.register('perfect_action_when_full', DataExtractor.Get('FullAction', 'Action'), ['perfect_action'])
@@ -165,6 +168,28 @@ class DataExtractor:
                         break
                 result.append(days_to_cross)
             df = pd.DataFrame({'DaysToCross': result})
+            return df
+
+    class Indicator(Graph.Function):
+
+        def __init__(self, lb, ub):
+            self.lb = lb
+            self.ub = ub
+
+        def compute(self, inputs):
+            prices = inputs[0].iloc[:, 0]
+            result = []
+            for i in range(len(prices)):
+                f = Const.DOWN
+                for j in range(i + 1, len(prices)):
+                    if prices[j] > prices[i] * self.ub:
+                        f = Const.UP
+                        break
+                    if prices[j] < prices[i] * self.lb:
+                        f = f = Const.DOWN
+                        break
+                result.append(f)
+            df = pd.DataFrame({'Indicator': result})
             return df
 
     class PerfectAction(Graph.Function):
