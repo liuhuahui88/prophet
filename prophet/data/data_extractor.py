@@ -57,6 +57,9 @@ class DataExtractor:
         graph.register('perfect_action_when_empty', DataExtractor.Get('EmptyAction', 'Action'), ['perfect_action'])
         graph.register('perfect_action_when_full', DataExtractor.Get('FullAction', 'Action'), ['perfect_action'])
 
+        graph.register('perfect_advantage_when_empty', DataExtractor.PerfectAdvantage('Empty'), ['perfect_action'])
+        graph.register('perfect_advantage_when_full', DataExtractor.PerfectAdvantage('Full'), ['perfect_action'])
+
         return graph
 
     class Get(Graph.Function):
@@ -186,7 +189,7 @@ class DataExtractor:
                         f = Const.UP
                         break
                     if prices[j] < prices[i] * self.lb:
-                        f = f = Const.DOWN
+                        f = Const.DOWN
                         break
                 result.append(f)
             df = pd.DataFrame({'Indicator': result})
@@ -204,3 +207,17 @@ class DataExtractor:
                                'EmptyAdvantage': advantages[Const.EMPTY], 'FullAdvantage': advantages[Const.FULL]
                                })
             return df
+
+    class PerfectAdvantage(Graph.Function):
+
+        def __init__(self, position_name):
+            self.cum_gain_name = '{}CumGain'.format(position_name)
+            self.action_name = '{}Action'.format(position_name)
+            self.advantage_name = '{}Advantage'.format(position_name)
+
+        def compute(self, inputs):
+            output_df = pd.DataFrame()
+            output_df['Advantage'] = inputs[0][self.action_name]
+            output_df['Advantage'] = output_df['Advantage'].apply(lambda x: -1 if x == Const.ASK else 1)
+            output_df['Advantage'] = output_df['Advantage'] * inputs[0][self.advantage_name]
+            return output_df
