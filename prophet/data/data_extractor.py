@@ -50,8 +50,8 @@ class DataExtractor:
         graph.register('days_to_cross_ub_of_ask', DataExtractor.DaysToCross(1, 1), ['price'])
         graph.register('days_to_cross_lb_of_ask', DataExtractor.DaysToCross(-1, discount), ['price'])
 
-        graph.register('indicator_of_bid', DataExtractor.Indicator(1, 1 / discount), ['price'])
-        graph.register('indicator_of_ask', DataExtractor.Indicator(discount, 1), ['price'])
+        graph.register('perfect_indicator_of_bid', DataExtractor.PerfectIndicator(1, 1 / discount), ['price'])
+        graph.register('perfect_indicator_of_ask', DataExtractor.PerfectIndicator(discount, 1), ['price'])
 
         graph.register('perfect_action', DataExtractor.PerfectAction(commission_rate), ['price'])
         graph.register('perfect_action_when_empty', DataExtractor.Get('EmptyAction', 'Action'), ['perfect_action'])
@@ -170,7 +170,7 @@ class DataExtractor:
             df = pd.DataFrame({'DaysToCross': result})
             return df
 
-    class Indicator(Graph.Function):
+    class PerfectIndicator(Graph.Function):
 
         def __init__(self, lb, ub):
             self.lb = lb
@@ -201,6 +201,6 @@ class DataExtractor:
             cum_gains, actions, advantages = self.action_generator.generate(inputs[0].iloc[:, 0])
             df = pd.DataFrame({'EmptyCumGain': cum_gains[Const.EMPTY], 'FullCumGain': cum_gains[Const.FULL],
                                'EmptyAction': actions[Const.EMPTY], 'FullAction': actions[Const.FULL],
-                               'EmptyAdvantage': advantages[Const.EMPTY], 'FullAdvantage': advantages[Const.FULL],
-            })
+                               'EmptyAdvantage': advantages[Const.EMPTY], 'FullAdvantage': advantages[Const.FULL]
+                               })
             return df

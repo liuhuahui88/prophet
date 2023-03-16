@@ -1,8 +1,8 @@
 from prophet.agent.buy_and_hold_agent import BuyAndHoldAgent
 from prophet.agent.buy_and_sell_agent import BuyAndSellAgent
 from prophet.agent.moving_average_agent import MovingAverageAgent
-from prophet.agent.oracle_agent import OracleAgent
-from prophet.agent.perfect_agent import PerfectAgent
+from prophet.agent.perfect_indicator_agent import PerfectIndicatorAgent
+from prophet.agent.perfect_action_agent import PerfectActionAgent
 from prophet.bt.back_tester import *
 
 if __name__ == '__main__':
@@ -19,8 +19,8 @@ if __name__ == '__main__':
     bt.register('B&S', BuyAndSellAgent(symbol, False))
     bt.register('S&B', BuyAndSellAgent(symbol, True))
     bt.register('MAA', MovingAverageAgent(symbol, 5, 10))
-    bt.register('ORA', OracleAgent(symbol, storage))
-    bt.register('PER', PerfectAgent(symbol, storage))
+    bt.register('PIA', PerfectIndicatorAgent(symbol, storage))
+    bt.register('PAA', PerfectActionAgent(symbol, storage))
 
     result = bt.back_test(symbol, '2014-01-01', '2016-01-01')
     result.print()

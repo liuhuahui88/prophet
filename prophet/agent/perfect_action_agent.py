@@ -1,11 +1,12 @@
 from prophet.agent.abstract_agent import Agent
 from prophet.data.data_extractor import DataExtractor
+from prophet.data.data_storage import StockDataStorage
 from prophet.utils.constant import Const
 
 
-class PerfectAgent(Agent):
+class PerfectActionAgent(Agent):
 
-    def __init__(self, symbol, storage):
+    def __init__(self, symbol, storage: StockDataStorage):
         self.symbol = symbol
         self.history = storage.load_history(symbol)
         self.indexes = {self.history.iloc[i].Date: i for i in range(len(self.history))}

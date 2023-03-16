@@ -1,6 +1,6 @@
 from prophet.agent.buy_and_hold_agent import BuyAndHoldAgent
 from prophet.agent.imitative_agent import ImitativeAgent
-from prophet.agent.oracle_agent import OracleAgent
+from prophet.agent.perfect_indicator_agent import PerfectIndicatorAgent
 from prophet.bt.back_tester import *
 
 if __name__ == '__main__':
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     train_end_date = '2011-01-01'
     test_end_date = '2012-01-01'
 
-    bt.register('ORA', OracleAgent(symbol, storage))
+    bt.register('PIA', PerfectIndicatorAgent(symbol, storage))
 
     result = bt.back_test(symbol, start_date, train_end_date)
 
