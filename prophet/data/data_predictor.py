@@ -53,6 +53,6 @@ class DataPredictor:
         model.evaluate(dataset)
 
         predictions = model.predict(dataset, verbose=False)
-        predictions = [result.ravel() for result in predictions]
-        df = pd.DataFrame(predictions).transpose()
+        df = pd.DataFrame()
+        df['Prediction'] = predictions.ravel()
         df.to_csv('csvs/prediction_{}.csv'.format(name), index=False)
