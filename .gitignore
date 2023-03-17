@@ -3,4 +3,5 @@
 /data/
 /venv/
 /script/logs
+/script/csvs
 __pycache__

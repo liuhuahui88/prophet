@@ -23,6 +23,8 @@ class DataPredictor:
         labels = self.label_extractor.extract(history)
         train_dataset, test_dataset = self.create_dataset(features, labels, len(history), train_pct)
         self.fit_model(self.model, train_dataset, test_dataset, epochs, patience)
+        self.eval_model(self.model, train_dataset, 'train')
+        self.eval_model(self.model, test_dataset, 'test')
 
     @staticmethod
     def create_dataset(features, labels, num_samples, train_pct):
@@ -46,7 +48,11 @@ class DataPredictor:
         model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False,
                   callbacks=[tensor_board_callback, early_stopping_callback])
 
-        model.evaluate(train_dataset)
-        model.evaluate(test_dataset)
+    @staticmethod
+    def eval_model(model: tf.keras.models.Model, dataset, name):
+        model.evaluate(dataset)
 
-        return model
+        predictions = model.predict(dataset, verbose=False)
+        predictions = [result.ravel() for result in predictions]
+        df = pd.DataFrame(predictions).transpose()
+        df.to_csv('csvs/prediction_{}.csv'.format(name), index=False)
