@@ -83,7 +83,7 @@ class SmartAgent(Agent):
         def advt_pair(y_true, y_pred, indicator_fn):
             empty_advt = advt_single(y_true, y_pred, indicator_fn)
             full_advt = advt_single(y_true + delta, y_pred + delta, indicator_fn)
-            return empty_advt + full_advt
+            return tf.maximum(empty_advt, full_advt)
 
         def hard_advt(y_true, y_pred):
             return advt_pair(y_true, y_pred, lambda tensor: (tf.sign(tensor) + 1) / 2)
