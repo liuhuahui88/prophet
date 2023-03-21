@@ -36,6 +36,7 @@ class DataExtractor:
         graph.register('mean_price', DataExtractor.Merge([DataExtractor.Mean(i) for i in [5, 10, 20, 30]]), ['price'])
         graph.register('std_price', DataExtractor.Merge([DataExtractor.Std(i) for i in [5, 10, 20, 30]]), ['price'])
         graph.register('skew_price', DataExtractor.Merge([DataExtractor.Skew(i) for i in [5, 10, 20, 30]]), ['price'])
+        graph.register('kurt_price', DataExtractor.Merge([DataExtractor.Kurt(i) for i in [5, 10, 20, 30]]), ['price'])
 
         graph.register('next_log_gain', DataExtractor.Diff(1, future=True), ['log_price'])
         graph.register('next_direction', DataExtractor.Sign(), ['next_log_gain'])
@@ -146,6 +147,11 @@ class DataExtractor:
 
         def aggregate(self, data):
             return data.skew().fillna(0)
+
+    class Kurt(Agg):
+
+        def aggregate(self, data):
+            return data.kurt().fillna(0)
 
     class Merge(Graph.Function):
 
