@@ -10,8 +10,6 @@ from prophet.utils.constant import Const
 
 class SmartAgent(Agent):
 
-    WINDOW_SIZE = 30
-
     def __init__(self, symbol, commission_rate):
         self.symbol = symbol
         self.history = pd.DataFrame(columns=['Close'])
@@ -39,7 +37,7 @@ class SmartAgent(Agent):
         position = Const.EMPTY if ctx.get_account().get_volume(self.symbol) == 0 else Const.FULL
 
         # accelerate the prediction by processing the latest history only
-        history = self.history.tail(self.WINDOW_SIZE)
+        history = self.history.tail(Const.WINDOW_SIZE)
 
         result = self.data_predictor.predict(history)
 

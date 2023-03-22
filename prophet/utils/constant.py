@@ -12,3 +12,5 @@ class Const:
     PAST = -1
     CENTER = 0
     FUTURE = 1
+
+    WINDOW_SIZE = 30
