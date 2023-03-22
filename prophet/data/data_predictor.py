@@ -20,6 +20,7 @@ class DataPredictor:
     def train(self, history: pd.DataFrame, train_pct, epochs, patience):
         features = self.data_extractor.extract(history, self.model.input_names)
         labels = self.data_extractor.extract(history, self.model.output_names)
+        pd.concat([v for v in features.values()] + [v for v in labels.values()], axis=1).to_csv('csvs/samples.csv')
         train_dataset, test_dataset = self.create_dataset(features, labels, len(history), train_pct)
         self.fit_model(self.model, train_dataset, test_dataset, epochs, patience)
         self.eval_model(self.model, train_dataset, 'train')
