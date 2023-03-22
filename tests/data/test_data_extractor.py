@@ -65,7 +65,16 @@ class TestDataExtractor(TestCase):
         get_m = DataExtractor.Get('m')
         merge = DataExtractor.Merge([get_n, get_m])
 
-        self.assert_df_equal(merge.compute([x]),x)
+        self.assert_df_equal(merge.compute([x]), x)
+
+    def test_flip(self):
+        x1 = pd.DataFrame({'n': [0, 0, 1, 0, 0, 1, 1, 0]})
+        x2 = pd.DataFrame({'n': [0, 1, 0, 1, 1, 0, 0, 0]})
+
+        actual = DataExtractor.Flip().compute([x1, x2])
+        expected = pd.DataFrame()
+        expected['Flip'] = [0, -1, 1, -1, 0, 1, 0, 0]
+        self.assert_df_equal(actual, expected)
 
     def check(self, f: Graph.Function, x, y):
         dx = pd.DataFrame()

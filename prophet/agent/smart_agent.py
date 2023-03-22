@@ -61,7 +61,8 @@ class SmartAgent(Agent):
         input4 = tf.keras.layers.Input(name='std_price', shape=(4,))
         input5 = tf.keras.layers.Input(name='skew_price', shape=(4,))
         input6 = tf.keras.layers.Input(name='kurt_price', shape=(4,))
-        inputs = [input0, input1, input2, input3, input4, input5, input6]
+        input7 = tf.keras.layers.Input(name='flip', shape=(1,))
+        inputs = [input0, input1, input2, input3, input4, input5, input6, input7]
 
         x = tf.keras.layers.Concatenate()(inputs)
         x = tf.keras.layers.Dense(128, activation='relu')(x)

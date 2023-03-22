@@ -36,6 +36,10 @@ class DataExtractor:
         graph.register('skew_price', DataExtractor.Merge([DataExtractor.Skew(i) for i in [5, 10, 20, 30]]), ['price'])
         graph.register('kurt_price', DataExtractor.Merge([DataExtractor.Kurt(i) for i in [5, 10, 20, 30]]), ['price'])
 
+        graph.register('short_term_stat', DataExtractor.Mean(10), ['price'])
+        graph.register('long_term_stat', DataExtractor.Mean(25), ['price'])
+        graph.register('flip', DataExtractor.Flip(), ['short_term_stat', 'long_term_stat'])
+
         graph.register('next_log_gain', DataExtractor.Diff(1, future=True), ['log_price'])
         graph.register('next_direction', DataExtractor.Sign(), ['next_log_gain'])
 
@@ -120,11 +124,11 @@ class DataExtractor:
         def compute(self, inputs):
             input_df = inputs[0]
             if self.mode == Const.FUTURE:
-                input_df = input_df.loc[::-1]
+                input_df = input_df.iloc[::-1]
             rolling = input_df.rolling(self.window_size, min_periods=1, center=(self.mode == Const.CENTER))
             output_df = self.aggregate(rolling)
             if self.mode == Const.FUTURE:
-                output_df = output_df.loc[::-1]
+                output_df = output_df.iloc[::-1]
             return output_df
 
         @abstractmethod
@@ -159,6 +163,29 @@ class DataExtractor:
         def compute(self, inputs):
             return pd.concat([function.compute(inputs) for function in self.functions], axis=1)
 
+    class Flip(Graph.Function):
+
+        def compute(self, inputs):
+            line1 = inputs[0].iloc[:, 0].tolist()
+            line2 = inputs[1].iloc[:, 0].tolist()
+
+            previous_state = 0
+            result = []
+            for i in range(len(line1)):
+                current_state = np.sign(line1[i] - line2[i])
+                if current_state == 0:
+                    result.append(0)
+                elif previous_state == 0:
+                    result.append(current_state)
+                elif current_state * previous_state == 1:
+                    result.append(0)
+                else:
+                    result.append(current_state)
+                previous_state = current_state
+
+            df = pd.DataFrame({'Flip': result})
+            return df
+
     class DaysToCross(Graph.Function):
 
         def __init__(self, direction, multiplier):
@@ -166,7 +193,7 @@ class DataExtractor:
             self.multiplier = multiplier
 
         def compute(self, inputs):
-            prices = inputs[0].iloc[:, 0]
+            prices = inputs[0].iloc[:, 0].tolist()
             result = []
             for i in range(len(prices)):
                 days_to_cross = float('inf')
@@ -185,7 +212,7 @@ class DataExtractor:
             self.ub = ub
 
         def compute(self, inputs):
-            prices = inputs[0].iloc[:, 0]
+            prices = inputs[0].iloc[:, 0].tolist()
             result = []
             for i in range(len(prices)):
                 f = Const.DOWN
