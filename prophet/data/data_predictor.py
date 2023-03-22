@@ -52,6 +52,10 @@ class DataPredictor:
         model.evaluate(dataset)
 
         predictions = model.predict(dataset, verbose=False)
+        if len(model.output_names) == 1:
+            predictions = [predictions]
+
         df = pd.DataFrame()
-        df['Prediction'] = predictions.ravel()
+        for i in range(len(model.output_names)):
+            df[model.output_names[i]] = predictions[i].ravel()
         df.to_csv('csvs/prediction_{}.csv'.format(name), index=False)
