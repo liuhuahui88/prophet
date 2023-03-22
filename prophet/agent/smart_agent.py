@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 from prophet.agent.abstract_agent import Agent
+from prophet.data.data_extractor import DataExtractor
 from prophet.data.data_predictor import DataPredictor
 from prophet.utils.constant import Const
 
@@ -11,16 +12,15 @@ class SmartAgent(Agent):
 
     WINDOW_SIZE = 30
 
-    def __init__(self, symbol):
+    def __init__(self, symbol, commission_rate):
         self.symbol = symbol
         self.history = pd.DataFrame(columns=['Close'])
 
-        commission_rate = 0.01
         ask_friction = np.log(1 - commission_rate)
         bid_friction = np.log(1 / (1 + commission_rate))
         self.delta = - (ask_friction + bid_friction)
 
-        self.data_predictor = DataPredictor(self.create_model(self.delta))
+        self.data_predictor = DataPredictor(self.create_model(self.delta), DataExtractor(commission_rate))
 
     def handle(self, ctx: Agent.Context):
         self.update(ctx)

@@ -10,16 +10,14 @@ from prophet.utils.graph import Graph
 
 class DataExtractor:
 
-    def __init__(self, names, graph=None):
-        self.names = names
-        self.graph = graph if graph is not None else self.create_default_graph()
+    def __init__(self, commission_rate):
+        self.graph = self.__create_graph(commission_rate)
 
-    def extract(self, history: pd.DataFrame):
-        return self.graph.compute(self.names, {'history': history})
+    def extract(self, history: pd.DataFrame, names):
+        return self.graph.compute(names, {'history': history})
 
     @staticmethod
-    def create_default_graph():
-        commission_rate = 0.01
+    def __create_graph(commission_rate):
         discount = (1 - commission_rate) / (1 + commission_rate)
 
         graph = Graph()
@@ -45,11 +43,11 @@ class DataExtractor:
         graph.register('expert_action_when_empty', DataExtractor.Fill(Const.ASK), ['expert_action'])
         graph.register('expert_action_when_full', DataExtractor.Fill(Const.BID), ['expert_action'])
 
-        graph.register('days_to_cross_ub_of_bid', DataExtractor.DaysToCross(1, 1 / discount), ['price'])
-        graph.register('days_to_cross_lb_of_bid', DataExtractor.DaysToCross(-1, 1), ['price'])
+        graph.register('days_to_cross_ub_of_bid', DataExtractor.DaysToCross(Const.UP, 1 / discount), ['price'])
+        graph.register('days_to_cross_lb_of_bid', DataExtractor.DaysToCross(Const.DOWN, 1), ['price'])
 
-        graph.register('days_to_cross_ub_of_ask', DataExtractor.DaysToCross(1, 1), ['price'])
-        graph.register('days_to_cross_lb_of_ask', DataExtractor.DaysToCross(-1, discount), ['price'])
+        graph.register('days_to_cross_ub_of_ask', DataExtractor.DaysToCross(Const.UP, 1), ['price'])
+        graph.register('days_to_cross_lb_of_ask', DataExtractor.DaysToCross(Const.DOWN, discount), ['price'])
 
         graph.register('perfect_indicator_of_bid', DataExtractor.PerfectIndicator(1, 1 / discount), ['price'])
         graph.register('perfect_indicator_of_ask', DataExtractor.PerfectIndicator(discount, 1), ['price'])

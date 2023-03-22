@@ -6,13 +6,13 @@ from prophet.utils.constant import Const
 
 class PerfectIndicatorAgent(Agent):
 
-    def __init__(self, symbol, storage: StockDataStorage):
+    def __init__(self, symbol, storage: StockDataStorage, commission_rate):
         self.symbol = symbol
         self.history = storage.load_history(symbol)
         self.indexes = {self.history.iloc[i].Date: i for i in range(len(self.history))}
 
-        data_extractor = DataExtractor(['perfect_indicator_of_bid', 'perfect_indicator_of_ask'])
-        data = data_extractor.extract(self.history)
+        data_extractor = DataExtractor(commission_rate)
+        data = data_extractor.extract(self.history, ['perfect_indicator_of_bid', 'perfect_indicator_of_ask'])
         self.perfect_indicator_of_bid = data['perfect_indicator_of_bid']
         self.perfect_indicator_of_ask = data['perfect_indicator_of_ask']
 

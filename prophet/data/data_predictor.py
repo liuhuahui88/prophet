@@ -8,19 +8,18 @@ from prophet.data.data_extractor import DataExtractor
 
 class DataPredictor:
 
-    def __init__(self, model: tf.keras.models.Model):
+    def __init__(self, model: tf.keras.models.Model, data_extractor: DataExtractor):
         self.model = model
-        self.feature_extractor = DataExtractor(model.input_names)
-        self.label_extractor = DataExtractor(model.output_names)
+        self.data_extractor = data_extractor
 
     def predict(self, history: pd.DataFrame):
-        features = self.feature_extractor.extract(history)
+        features = self.data_extractor.extract(history, self.model.input_names)
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(len(history))
         return self.model.predict(dataset, verbose=False)
 
     def train(self, history: pd.DataFrame, train_pct, epochs, patience):
-        features = self.feature_extractor.extract(history)
-        labels = self.label_extractor.extract(history)
+        features = self.data_extractor.extract(history, self.model.input_names)
+        labels = self.data_extractor.extract(history, self.model.output_names)
         train_dataset, test_dataset = self.create_dataset(features, labels, len(history), train_pct)
         self.fit_model(self.model, train_dataset, test_dataset, epochs, patience)
         self.eval_model(self.model, train_dataset, 'train')

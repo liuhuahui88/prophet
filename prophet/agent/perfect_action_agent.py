@@ -6,13 +6,13 @@ from prophet.utils.constant import Const
 
 class PerfectActionAgent(Agent):
 
-    def __init__(self, symbol, storage: StockDataStorage):
+    def __init__(self, symbol, storage: StockDataStorage, commission_rate):
         self.symbol = symbol
         self.history = storage.load_history(symbol)
         self.indexes = {self.history.iloc[i].Date: i for i in range(len(self.history))}
 
-        data_extractor = DataExtractor(['perfect_action_when_empty', 'perfect_action_when_full'])
-        data = data_extractor.extract(self.history)
+        data_extractor = DataExtractor(commission_rate)
+        data = data_extractor.extract(self.history, ['perfect_action_when_empty', 'perfect_action_when_full'])
         self.perfect_action_when_empty = data['perfect_action_when_empty']
         self.perfect_action_when_full = data['perfect_action_when_full']
 

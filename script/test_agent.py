@@ -9,7 +9,6 @@ if __name__ == '__main__':
     storage = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
 
     commission_rate = 0.01
-    discount = (1 - commission_rate) / (1 + commission_rate)
 
     bt = BackTester(storage, Broker(commission_rate))
 
@@ -19,8 +18,8 @@ if __name__ == '__main__':
     bt.register('B&S', SwitchAgent(symbol, False))
     bt.register('S&B', SwitchAgent(symbol, True))
     bt.register('MAA', MovingAverageAgent(symbol, 5, 10))
-    bt.register('PIA', PerfectIndicatorAgent(symbol, storage))
-    bt.register('PAA', PerfectActionAgent(symbol, storage))
+    bt.register('PIA', PerfectIndicatorAgent(symbol, storage, commission_rate))
+    bt.register('PAA', PerfectActionAgent(symbol, storage, commission_rate))
 
     result = bt.back_test(symbol, '2014-01-01', '2016-01-01')
     result.print()
