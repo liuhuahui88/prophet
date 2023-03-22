@@ -31,13 +31,13 @@ class DataExtractor:
         graph.register('log_price', DataExtractor.Log(), ['price'])
         graph.register('past_log_gain', DataExtractor.Merge([DataExtractor.Diff(i) for i in range(1, 30)]), ['log_price'])
 
-        graph.register('mean_price', DataExtractor.Merge([DataExtractor.Mean(i) for i in [5, 10, 20, 30]]), ['price'])
-        graph.register('std_price', DataExtractor.Merge([DataExtractor.Std(i) for i in [5, 10, 20, 30]]), ['price'])
-        graph.register('skew_price', DataExtractor.Merge([DataExtractor.Skew(i) for i in [5, 10, 20, 30]]), ['price'])
-        graph.register('kurt_price', DataExtractor.Merge([DataExtractor.Kurt(i) for i in [5, 10, 20, 30]]), ['price'])
+        graph.register('mean_price', DataExtractor.Merge([DataExtractor.Mean(i) for i in [5, 10, 20, 30]]), ['log_price'])
+        graph.register('std_price', DataExtractor.Merge([DataExtractor.Std(i) for i in [5, 10, 20, 30]]), ['log_price'])
+        graph.register('skew_price', DataExtractor.Merge([DataExtractor.Skew(i) for i in [5, 10, 20, 30]]), ['log_price'])
+        graph.register('kurt_price', DataExtractor.Merge([DataExtractor.Kurt(i) for i in [5, 10, 20, 30]]), ['log_price'])
 
-        graph.register('short_term_stat', DataExtractor.Mean(10), ['price'])
-        graph.register('long_term_stat', DataExtractor.Mean(25), ['price'])
+        graph.register('short_term_stat', DataExtractor.Mean(10), ['log_price'])
+        graph.register('long_term_stat', DataExtractor.Mean(25), ['log_price'])
         graph.register('flip', DataExtractor.Flip(), ['short_term_stat', 'long_term_stat'])
 
         graph.register('next_log_gain', DataExtractor.Diff(1, future=True), ['log_price'])
