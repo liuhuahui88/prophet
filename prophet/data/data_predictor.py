@@ -17,23 +17,23 @@ class DataPredictor:
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(len(history))
         return self.model.predict(dataset, verbose=False)
 
-    def train(self, history: pd.DataFrame, train_pct, epochs, patience):
+    def train(self, history: pd.DataFrame, sample_pct, batch_pct, epochs, patience):
         features = self.data_extractor.extract(history, self.model.input_names)
         labels = self.data_extractor.extract(history, self.model.output_names)
         pd.concat([v for v in features.values()] + [v for v in labels.values()], axis=1).to_csv('csvs/samples.csv')
-        train_dataset, test_dataset = self.create_dataset(features, labels, len(history), train_pct)
+        train_dataset, test_dataset = self.create_dataset(features, labels, len(history), sample_pct, batch_pct)
         self.fit_model(self.model, train_dataset, test_dataset, epochs, patience)
         self.eval_model(self.model, train_dataset, 'train')
         self.eval_model(self.model, test_dataset, 'test')
 
     @staticmethod
-    def create_dataset(features, labels, num_samples, train_pct):
-        num_train_samples = int(train_pct * num_samples)
+    def create_dataset(features, labels, num_samples, sample_pct, batch_pct):
+        num_train_samples = int(num_samples * sample_pct)
         num_test_samples = num_samples - num_train_samples
 
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
 
-        train_dataset = dataset.take(num_train_samples).batch(num_train_samples)
+        train_dataset = dataset.take(num_train_samples).batch(int(num_train_samples * batch_pct))
         test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
 
         return train_dataset, test_dataset
