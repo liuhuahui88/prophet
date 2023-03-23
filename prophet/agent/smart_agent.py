@@ -78,12 +78,12 @@ class SmartAgent(Agent):
         model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
         def advt_single(y_true, y_pred, indicator_fn):
-            return tf.reduce_mean(tf.abs(y_true) * indicator_fn(-y_pred * tf.sign(y_true)))
+            return tf.abs(y_true) * indicator_fn(-y_pred * tf.sign(y_true))
 
         def advt_pair(y_true, y_pred, indicator_fn):
             empty_advt = advt_single(y_true, y_pred, indicator_fn)
             full_advt = advt_single(y_true + delta, y_pred + delta, indicator_fn)
-            return tf.maximum(empty_advt, full_advt)
+            return tf.reduce_mean(tf.maximum(empty_advt, full_advt))
 
         def hard_advt(y_true, y_pred):
             return advt_pair(y_true, y_pred, lambda tensor: (tf.sign(tensor) + 1) / 2)
