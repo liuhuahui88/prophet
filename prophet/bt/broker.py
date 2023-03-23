@@ -15,7 +15,7 @@ class Broker:
         account.add_volume(symbol, delta_volume)
 
     def calculate_commission(self, cash):
-        if cash <= 0:
+        if cash < 0:
             raise ValueError('negative cash is invalid: {}'.format(cash))
 
         return cash * self.__commission_rate
