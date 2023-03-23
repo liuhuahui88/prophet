@@ -81,7 +81,10 @@ class SmartAgent(Agent):
             return (tf.sign(tensor) + 1) / 2
 
         def hinge(tensor):
-            return tf.keras.activations.relu(tensor + 1)
+            width = delta / 2
+            margin_pct = 0.1
+            margin = width * margin_pct
+            return tf.keras.activations.relu(tensor + margin)
 
         def soft(tensor):
             return tf.keras.activations.sigmoid(tensor)
