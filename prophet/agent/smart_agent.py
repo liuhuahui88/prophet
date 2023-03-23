@@ -77,6 +77,15 @@ class SmartAgent(Agent):
 
         model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
+        def hard(tensor):
+            return (tf.sign(tensor) + 1) / 2
+
+        def hinge(tensor):
+            return tf.keras.activations.relu(tensor + 1)
+
+        def soft(tensor):
+            return tf.keras.activations.sigmoid(tensor)
+
         def advt_single(y_true, y_pred, indicator_fn):
             return tf.abs(y_true) * indicator_fn(-y_pred * tf.sign(y_true))
 
@@ -86,13 +95,13 @@ class SmartAgent(Agent):
             return tf.reduce_mean(tf.maximum(empty_advt, full_advt))
 
         def hard_advt(y_true, y_pred):
-            return advt_pair(y_true, y_pred, lambda tensor: (tf.sign(tensor) + 1) / 2)
+            return advt_pair(y_true, y_pred, hard)
 
         def hinge_advt(y_true, y_pred):
-            return advt_pair(y_true, y_pred, lambda tensor: tf.keras.activations.relu(tensor + 1))
+            return advt_pair(y_true, y_pred, hinge)
 
         def soft_advt(y_true, y_pred):
-            return advt_pair(y_true, y_pred, lambda tensor: tf.keras.activations.sigmoid(tensor))
+            return advt_pair(y_true, y_pred, soft)
 
         model.compile(optimizer='adam',
                       loss={'perfect_advantage_when_empty': 'mse'},
