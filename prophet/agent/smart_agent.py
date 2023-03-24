@@ -54,15 +54,8 @@ class SmartAgent(Agent):
 
     @staticmethod
     def create_model(delta):
-        input0 = tf.keras.layers.Input(name='price', shape=(1,))
-        input1 = tf.keras.layers.Input(name='past_price', shape=(29,))
-        input2 = tf.keras.layers.Input(name='past_log_gain', shape=(29,))
-        input3 = tf.keras.layers.Input(name='mean_price', shape=(4,))
-        input4 = tf.keras.layers.Input(name='std_price', shape=(4,))
-        input5 = tf.keras.layers.Input(name='skew_price', shape=(4,))
-        input6 = tf.keras.layers.Input(name='kurt_price', shape=(4,))
-        input7 = tf.keras.layers.Input(name='flip', shape=(1,))
-        inputs = [input0, input1, input2, input3, input4, input5, input6, input7]
+        prices = tf.keras.layers.Input(name='prices', shape=(30,))
+        inputs = [prices]
 
         x = tf.keras.layers.Concatenate()(inputs)
         x = tf.keras.layers.Dense(128, activation='relu')(x)
