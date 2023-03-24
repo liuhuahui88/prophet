@@ -58,6 +58,8 @@ class TestDataExtractor(TestCase):
 
         self.check(Sum(3, mode=Const.CENTER), x, [3, 6, 9, 12, 9])
 
+        self.check(Sum(alpha=0.5), x, [1, 2.5, 4.25, 6.125, 8.0625])
+
     def test_merge(self):
         x = pd.DataFrame({'n': [1, 2, 3], 'm': [4, 5, 6]})
 
