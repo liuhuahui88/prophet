@@ -31,6 +31,8 @@ class DataExtractor:
         graph.register('log_price', DataExtractor.Log(), ['price'])
         graph.register('log_gain', DataExtractor.Diff(1), ['log_price'])
 
+        graph.register('log_price_rank', DataExtractor.Rank(5), ['log_price'])
+
         graph.register('short_term_stat', DataExtractor.Mean(10), ['log_price'])
         graph.register('long_term_stat', DataExtractor.Mean(25), ['log_price'])
         graph.register('flip', DataExtractor.Flip(), ['short_term_stat', 'long_term_stat'])
@@ -133,6 +135,11 @@ class DataExtractor:
         @abstractmethod
         def aggregate(self, data):
             pass
+
+    class Rank(Agg):
+
+        def aggregate(self, data):
+            return data.rank(pct=True)
 
     class Mean(Agg):
 
