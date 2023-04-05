@@ -69,22 +69,24 @@ class TestDataExtractor(TestCase):
 
         self.assert_df_equal(merge.compute([x]), x)
 
+    def test_keep(self):
+        x = pd.DataFrame({'n': [-1, 1, 1, 1, -1, -1, 1]})
+
+        actual = DataExtractor.Keep(lambda z: z < 0).compute([x])
+        expected = pd.DataFrame({'Keep': [1, 0, 0, 0, 1, 2, 0]})
+        self.assert_df_equal(actual, expected)
+
     def test_flip(self):
         x1 = pd.DataFrame({'n': [0, 0, 1, 0, 0, 1, 1, 0]})
         x2 = pd.DataFrame({'n': [0, 1, 0, 1, 1, 0, 0, 0]})
 
         actual = DataExtractor.Flip().compute([x1, x2])
-        expected = pd.DataFrame()
-        expected['Flip'] = [0, -1, 1, -1, 0, 1, 0, 0]
+        expected = pd.DataFrame({'Flip': [0, -1, 1, -1, 0, 1, 0, 0]})
         self.assert_df_equal(actual, expected)
 
     def check(self, f: Graph.Function, x, y):
-        dx = pd.DataFrame()
-        dx['n'] = x
-
-        dy = pd.DataFrame()
-        dy['n'] = y
-
+        dx = pd.DataFrame({'n': x})
+        dy = pd.DataFrame({'n': y})
         self.assert_df_equal(f.compute([dx]), dy)
 
     def assert_df_equal(self, dx, dy):

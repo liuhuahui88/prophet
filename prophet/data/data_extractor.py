@@ -31,6 +31,9 @@ class DataExtractor:
         graph.register('log_price', DataExtractor.Log(), ['price'])
         graph.register('log_gain', DataExtractor.Diff(1), ['log_price'])
 
+        graph.register('keep_lose', DataExtractor.Keep(lambda n: n < 0), ['log_gain'])
+        graph.register('keep_gain', DataExtractor.Keep(lambda n: n > 0), ['log_gain'])
+
         graph.register('log_price_rank', DataExtractor.Rank(5), ['log_price'])
 
         graph.register('short_term_stat', DataExtractor.Mean(10), ['log_price'])
@@ -168,6 +171,26 @@ class DataExtractor:
 
         def compute(self, inputs):
             return pd.concat([function.compute(inputs) for function in self.functions], axis=1)
+
+    class Keep(Graph.Function):
+
+        def __init__(self, cond):
+            self.cond = cond
+
+        def compute(self, inputs):
+            line = inputs[0].iloc[:, 0].tolist()
+
+            cnt = 0
+            result = []
+            for i in range(len(line)):
+                if self.cond(line[i]):
+                    cnt += 1
+                else:
+                    cnt = 0
+                result.append(cnt)
+
+            df = pd.DataFrame({'Keep': result})
+            return df
 
     class Flip(Graph.Function):
 
