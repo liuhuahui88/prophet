@@ -23,36 +23,36 @@ class BackTester:
     def register(self, name: str, agent: Agent):
         self.agents[name] = agent
 
-    def back_test(self, symbol: str, start_date=None, end_date=None):
-        name = self.storage.get_name(symbol)
-        history = self.__load_history(symbol, start_date, end_date)
+    def back_test(self, symbols, start_date=None, end_date=None):
+        names = [self.storage.get_name(symbol) for symbol in symbols]
+        histories = [self.__load_history(symbol, start_date, end_date) for symbol in symbols]
 
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 
-        for i in range(len(history)):
-            date = self.__create_date(history, i)
-            prices = self.__create_prices(symbol, history, i)
-            volumes = self.__create_volumes(symbol, history, i)
-            liquidities = self.__create_liquidities(symbol, history, i)
+        for i in range(len(histories[0])):
+            date = self.__create_date(histories, i)
+            prices = self.__create_prices(symbols, histories, i)
+            volumes = self.__create_volumes(symbols, histories, i)
+            liquidities = self.__create_liquidities(symbols, histories, i)
             for case in cases:
                 case.handle(date, prices, volumes, liquidities)
 
-        return BackTester.TestResult(symbol, name, history, cases)
+        return BackTester.TestResult(symbols, names, histories, cases)
 
     class TestResult:
 
-        def __init__(self, symbol, name, history, cases):
-            self.symbol = symbol
-            self.name = name
-            self.history = history
+        def __init__(self, symbols, names, histories, cases):
+            self.symbols = symbols
+            self.names = names
+            self.histories = histories
             self.cases = cases
 
         def print(self):
             for case in self.cases:
-                print('{} : {} : {}'.format([self.symbol, self.name], case.name, case.evaluator))
+                print('{} : {} : {}'.format([self.symbols, self.names], case.name, case.evaluator))
 
         def plot(self, action_agent_name=None):
-            temp_history = self.history.copy()
+            temp_history = self.histories[0].copy()
 
             value_names = []
             for case in self.cases:
@@ -68,7 +68,7 @@ class BackTester:
                 temp_history[action_name] = case.actions
 
             figure = Figure(action_name=action_name, value_names=value_names)
-            figure.plot(temp_history, str([self.symbol, self.name]))
+            figure.plot(temp_history, str([self.symbols, self.names]))
 
     class TestCase:
 
@@ -160,21 +160,30 @@ class BackTester:
         return history
 
     @staticmethod
-    def __create_date(history: pd.DataFrame, idx):
-        return history.iloc[idx].Date
+    def __create_date(histories, idx):
+        return histories[0].iloc[idx].Date
 
     @staticmethod
-    def __create_prices(symbol, history: pd.DataFrame, idx):
-        return {symbol: history.iloc[idx].Close}
+    def __create_prices(symbols, histories, idx):
+        res = {}
+        for i in range(len(symbols)):
+            res[symbols[i]] = histories[i].iloc[idx].Close
+        return res
 
     @staticmethod
-    def __create_volumes(symbol, history: pd.DataFrame, idx):
-        return {symbol: history.iloc[idx].Volume * 1.0}
+    def __create_volumes(symbols, histories, idx):
+        res = {}
+        for i in range(len(symbols)):
+            res[symbols[i]] = histories[i].iloc[idx].Volume * 1.0
+        return res
 
     @staticmethod
-    def __create_liquidities(symbol, history: pd.DataFrame, idx):
-        diff = math.log(history.iloc[idx].Close / history.iloc[idx - 1].Close) if idx != 0 else 0
-        threshold = math.log(1.19 if symbol[0] == '3' else 1.09) if idx != 0 else 0
-        has_ask = diff < threshold
-        has_bid = diff > -threshold
-        return {symbol: Liquidity(history.iloc[idx].Close, 0, has_ask, has_bid)}
+    def __create_liquidities(symbols, histories, idx):
+        res = {}
+        for i in range(len(symbols)):
+            diff = math.log(histories[i].iloc[idx].Close / histories[i].iloc[idx - 1].Close) if idx != 0 else 0
+            threshold = math.log(1.19 if symbols[i][0] == '3' else 1.09) if idx != 0 else 0
+            has_ask = diff < threshold
+            has_bid = diff > -threshold
+            res[symbols[i]] = Liquidity(histories[i].iloc[idx].Close, 0, has_ask, has_bid)
+        return res

@@ -18,14 +18,14 @@ if __name__ == '__main__':
 
     bt.register('PAA', PerfectActionAgent(symbol, storage, commission_rate))
 
-    result = bt.back_test(symbol, start_date, train_end_date)
+    result = bt.back_test([symbol], start_date, train_end_date)
 
     smart_agent = SmartAgent(symbol, commission_rate)
-    smart_agent.observe(result.history)
+    smart_agent.observe(result.histories[0])
     bt.register('SMT', smart_agent)
 
     bt.register('B&H', BuyAndHoldAgent(symbol))
 
-    result = bt.back_test(symbol, train_end_date, test_end_date)
+    result = bt.back_test([symbol], train_end_date, test_end_date)
     result.print()
     result.plot('SMT')

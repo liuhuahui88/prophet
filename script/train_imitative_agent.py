@@ -18,14 +18,14 @@ if __name__ == '__main__':
 
     bt.register('PIA', PerfectIndicatorAgent(symbol, storage, commission_rate))
 
-    result = bt.back_test(symbol, start_date, train_end_date)
+    result = bt.back_test([symbol], start_date, train_end_date)
 
     imitative_agent = ImitativeAgent(symbol, commission_rate)
-    imitative_agent.observe(result.history, result.cases[0].actions)
+    imitative_agent.observe(result.histories[0], result.cases[0].actions)
     bt.register('IMI', imitative_agent)
 
     bt.register('B&H', BuyAndHoldAgent(symbol))
 
-    result = bt.back_test(symbol, train_end_date, test_end_date)
+    result = bt.back_test([symbol], train_end_date, test_end_date)
     result.print()
     result.plot('IMI')

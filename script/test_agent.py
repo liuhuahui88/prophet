@@ -21,6 +21,6 @@ if __name__ == '__main__':
     bt.register('PIA', PerfectIndicatorAgent(symbol, storage, commission_rate))
     bt.register('PAA', PerfectActionAgent(symbol, storage, commission_rate))
 
-    result = bt.back_test(symbol, '2014-01-01', '2016-01-01')
+    result = bt.back_test([symbol], '2014-01-01', '2016-01-01')
     result.print()
     result.plot()
