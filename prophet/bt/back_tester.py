@@ -32,9 +32,10 @@ class BackTester:
         for i in range(len(history)):
             date = self.__create_date(history, i)
             prices = self.__create_prices(symbol, history, i)
+            volumes = self.__create_volumes(symbol, history, i)
             liquidities = self.__create_liquidities(symbol, history, i)
             for case in cases:
-                case.handle(date, prices, liquidities)
+                case.handle(date, prices, volumes, liquidities)
 
         return BackTester.TestResult(symbol, name, history, cases)
 
@@ -79,8 +80,8 @@ class BackTester:
             self.actions = []
             self.evaluator = Evaluator(init_cash)
 
-        def handle(self, date, prices, liquidities):
-            ctx = self.create_agent_context(date, prices, liquidities)
+        def handle(self, date, prices, volumes, liquidities):
+            ctx = self.create_agent_context(date, prices, volumes, liquidities)
             self.agent.handle(ctx)
 
             action = ctx.get_action()
@@ -89,8 +90,8 @@ class BackTester:
             value = self.calculate_account_value(prices)
             self.evaluator.feed(value)
 
-        def create_agent_context(self, date: str, prices: dict, liquidities: dict):
-            return BackTester.AgentContext(self.broker, self.account, date, prices, liquidities)
+        def create_agent_context(self, date: str, prices: dict, volumes: dict, liquidities: dict):
+            return BackTester.AgentContext(self.broker, self.account, date, prices, volumes, liquidities)
 
         def calculate_account_value(self, prices: dict):
             cash_value = self.account.get_cash()
@@ -104,11 +105,12 @@ class BackTester:
 
     class AgentContext(Agent.Context):
 
-        def __init__(self, broker: Broker, account: Account, date: str, prices: dict, liquidities: dict):
+        def __init__(self, broker: Broker, account: Account, date: str, prices: dict, volumes: dict, liquidities: dict):
             self.__broker = broker
             self.__account = account
             self.__date = date
             self.__prices = prices
+            self.__volumes = volumes
             self.__liquidities = liquidities
             self.__action = None
 
@@ -117,6 +119,9 @@ class BackTester:
 
         def get_prices(self):
             return self.__prices
+
+        def get_volumes(self):
+            return self.__volumes
 
         def get_date(self):
             return self.__date
@@ -161,6 +166,10 @@ class BackTester:
     @staticmethod
     def __create_prices(symbol, history: pd.DataFrame, idx):
         return {symbol: history.iloc[idx].Close}
+
+    @staticmethod
+    def __create_volumes(symbol, history: pd.DataFrame, idx):
+        return {symbol: history.iloc[idx].Volume * 1.0}
 
     @staticmethod
     def __create_liquidities(symbol, history: pd.DataFrame, idx):

@@ -16,6 +16,10 @@ class Agent(ABC):
             pass
 
         @abstractmethod
+        def get_volumes(self):
+            pass
+
+        @abstractmethod
         def get_date(self):
             pass
 

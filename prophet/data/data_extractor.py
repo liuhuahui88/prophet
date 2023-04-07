@@ -25,6 +25,7 @@ class DataExtractor:
         graph.register('history')
 
         graph.register('price', DataExtractor.Get('Close', 'Price'), ['history'])
+        graph.register('volume', DataExtractor.Get('Volume'), ['history'])
 
         graph.register('prices', DataExtractor.Merge([DataExtractor.Shift(i) for i in range(0, 30)]), ['price'])
 
