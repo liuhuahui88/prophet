@@ -72,37 +72,11 @@ class SmartAgent(Agent):
 
         model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
-        def hard(tensor):
-            return (tf.sign(tensor) + 1) / 2
-
-        def hinge(tensor):
-            width = delta / 2
-            margin_pct = 0.1
-            margin = width * margin_pct
-            return tf.keras.activations.relu(tensor + margin)
-
-        def soft(tensor):
-            return tf.keras.activations.sigmoid(tensor)
-
-        def advt_single(y_true, y_pred, indicator_fn):
-            return tf.abs(y_true) * indicator_fn(-y_pred * tf.sign(y_true))
-
-        def advt_pair(y_true, y_pred, indicator_fn):
-            empty_advt = advt_single(y_true, y_pred, indicator_fn)
-            full_advt = advt_single(y_true + delta, y_pred + delta, indicator_fn)
-            return tf.reduce_mean(tf.maximum(empty_advt, full_advt))
-
-        def hard_advt(y_true, y_pred):
-            return advt_pair(y_true, y_pred, hard)
-
-        def hinge_advt(y_true, y_pred):
-            return advt_pair(y_true, y_pred, hinge)
-
-        def soft_advt(y_true, y_pred):
-            return advt_pair(y_true, y_pred, soft)
-
         model.compile(optimizer='adam',
                       loss={'oracle_empty_advantage': 'mse'},
-                      metrics=[hard_advt, hinge_advt, soft_advt, Metric.me, Metric.r2])
+                      metrics=[Metric.create_hard_advt(delta),
+                               Metric.create_hinge_advt(delta),
+                               Metric.create_soft_advt(delta),
+                               Metric.me, Metric.r2])
 
         return model
