@@ -1,15 +1,13 @@
 import math
 
-import pandas as pd
-
-from prophet.data.data_storage import StockDataStorage
 from prophet.agent.abstract_agent import Agent
-from prophet.utils.account import Account
-from prophet.utils.evaluator import Evaluator
 from prophet.bt.broker import Broker
 from prophet.bt.liquidity import Liquidity
-from prophet.utils.figure import Figure
+from prophet.data.data_storage import StockDataStorage
+from prophet.utils.account import Account
 from prophet.utils.constant import Const
+from prophet.utils.evaluator import Evaluator
+from prophet.utils.figure import Figure
 
 
 class BackTester:
@@ -25,7 +23,7 @@ class BackTester:
 
     def back_test(self, symbols, start_date=None, end_date=None):
         names = [self.storage.get_name(symbol) for symbol in symbols]
-        histories = [self.__load_history(symbol, start_date, end_date) for symbol in symbols]
+        histories = [self.storage.load_history(symbol, start_date, end_date) for symbol in symbols]
 
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 
@@ -147,15 +145,6 @@ class BackTester:
             volume, cash = self.__liquidities[symbol].ask(volume, price)
             if volume != 0:
                 self.__broker.trade(self.__account, symbol, -volume, cash)
-
-    def __load_history(self, symbol, start_date, end_date):
-        history = self.storage.load_history(symbol)
-        if start_date is not None:
-            history = history[history.Date >= start_date]
-        if end_date is not None:
-            history = history[history.Date < end_date]
-        history = history.reset_index(drop=True)
-        return history
 
     @staticmethod
     def __create_date(histories, idx):

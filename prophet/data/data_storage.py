@@ -15,8 +15,14 @@ class StockDataStorage:
     def get_name(self, symbol):
         return self.__name_dict.get(symbol, 'UNKNOWN')
 
-    def load_history(self, symbol):
-        return pd.read_csv(self.__format_path(symbol))
+    def load_history(self, symbol, start_date=None, end_date=None):
+        history = pd.read_csv(self.__format_path(symbol))
+        if start_date is not None:
+            history = history[history.Date >= start_date]
+        if end_date is not None:
+            history = history[history.Date < end_date]
+        history = history.reset_index(drop=True)
+        return history
 
     def save_history(self, symbol, history_df):
         history_df.to_csv(self.__format_path(symbol), index=False)
