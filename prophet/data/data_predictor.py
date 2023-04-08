@@ -31,6 +31,7 @@ class DataPredictor:
 
     @staticmethod
     def extract_and_concat(histories, data_extractor, names):
+        histories = [history for history in histories if len(history) != 0]
         datas = [data_extractor.extract(history, names) for history in histories]
         return {name: pd.concat([data[name] for data in datas]) for name in names}
 
