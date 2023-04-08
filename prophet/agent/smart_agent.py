@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import tensorflow as tf
 
@@ -48,8 +47,8 @@ class SmartAgent(Agent):
 
         return score
 
-    def observe(self, history: pd.DataFrame):
-        self.data_predictor.train([history], 0.9, 1, 100, 100)
+    def observe(self, histories):
+        self.data_predictor.train(histories, 0.9, 1, 100, 100)
 
     @staticmethod
     def create_model(delta):

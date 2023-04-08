@@ -21,7 +21,7 @@ if __name__ == '__main__':
     for symbol in symbols:
         history = storage.load_history(symbol, start_date, train_end_date)
         smart_agent = SmartAgent(symbol, commission_rate)
-        smart_agent.observe(history)
+        smart_agent.observe([history])
         agents.append(smart_agent)
     bt.register('ENS', EnsembleAgent(agents))
 

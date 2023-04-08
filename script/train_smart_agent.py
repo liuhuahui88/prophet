@@ -6,19 +6,20 @@ from prophet.bt.back_tester import *
 if __name__ == '__main__':
     storage = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
 
-    commission_rate = 0.01
+    commission_rate = 0.0
 
     bt = BackTester(storage, Broker(commission_rate))
 
-    symbol = '600000'
+    symbol = '300001'
 
     start_date = '2010-01-01'
-    train_end_date = '2011-01-01'
-    test_end_date = '2012-01-01'
+    train_end_date = '2022-01-01'
+    test_end_date = '2023-01-01'
 
-    history = storage.load_history(symbol, start_date, train_end_date)
+    symbols = [s for s in storage.get_symbols() if s[0] == '3' and s <= '300003']
+    histories = [storage.load_history(symbol, start_date, train_end_date) for symbol in symbols]
     smart_agent = SmartAgent(symbol, commission_rate)
-    smart_agent.observe(history)
+    smart_agent.observe(histories)
     bt.register('SMT', smart_agent)
 
     bt.register('B&H', NaiveAgent(symbol))
