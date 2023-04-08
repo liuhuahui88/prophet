@@ -10,7 +10,6 @@ class EnsembleAgent(Agent):
         best_score = -float('inf')
         best_symbol = None
         for agent in self.agents:
-            agent.update(ctx)
             score = agent.predict(ctx)
             if score > best_score:
                 best_score = score
