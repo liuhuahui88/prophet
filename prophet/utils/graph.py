@@ -36,7 +36,7 @@ class Graph:
             if name not in self.nodes:
                 raise KeyError('{} has not been registered'.format(name))
             self.compute_inner(self.nodes[name], ctx)
-        return {k: v for k, v in ctx.items() if k in names}
+        return {name: ctx[name] for name in names}
 
     def compute_inner(self, node: Node, ctx):
         if node.name not in ctx:
