@@ -6,6 +6,7 @@ from prophet.agent.abstract_agent import Agent
 from prophet.data.data_extractor import DataExtractor
 from prophet.data.data_predictor import DataPredictor
 from prophet.utils.constant import Const
+from prophet.utils.metric import Metric
 
 
 class SmartAgent(Agent):
@@ -102,6 +103,6 @@ class SmartAgent(Agent):
 
         model.compile(optimizer='adam',
                       loss={'perfect_advantage_when_empty': 'mse'},
-                      metrics=[hard_advt, hinge_advt, soft_advt])
+                      metrics=[hard_advt, hinge_advt, soft_advt, Metric.me, Metric.r2])
 
         return model
