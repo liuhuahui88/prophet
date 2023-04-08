@@ -1,5 +1,5 @@
 from prophet.agent.naive_agent import NaiveAgent
-from prophet.agent.perfect_action_agent import PerfectActionAgent
+from prophet.agent.oracle_agent import OracleAgent
 from prophet.agent.smart_agent import SmartAgent
 from prophet.bt.back_tester import *
 
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     train_end_date = '2011-01-01'
     test_end_date = '2012-01-01'
 
-    bt.register('PAA', PerfectActionAgent(symbol, storage, commission_rate))
+    bt.register('ORA', OracleAgent(symbol, storage, commission_rate))
 
     result = bt.back_test([symbol], start_date, train_end_date)
 

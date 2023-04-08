@@ -1,6 +1,6 @@
 from prophet.agent.ensemble_agent import EnsembleAgent
 from prophet.agent.naive_agent import NaiveAgent
-from prophet.agent.perfect_action_agent import PerfectActionAgent
+from prophet.agent.oracle_agent import OracleAgent
 from prophet.agent.smart_agent import SmartAgent
 from prophet.bt.back_tester import *
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     for symbol in symbols:
         bt.register('B&H-' + symbol, NaiveAgent(symbol))
-        bt.register('PAA-' + symbol, PerfectActionAgent(symbol, storage, commission_rate))
+        bt.register('ORA-' + symbol, OracleAgent(symbol, storage, commission_rate))
 
     result = bt.back_test(symbols, train_end_date, test_end_date)
     result.print()

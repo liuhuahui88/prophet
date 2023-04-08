@@ -4,7 +4,7 @@ from prophet.data.data_storage import StockDataStorage
 from prophet.utils.constant import Const
 
 
-class PerfectActionAgent(Agent):
+class OracleAgent(Agent):
 
     def __init__(self, symbol, storage: StockDataStorage, commission_rate):
         self.symbol = symbol
