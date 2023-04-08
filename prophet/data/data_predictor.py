@@ -17,20 +17,30 @@ class DataPredictor:
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(len(history))
         return self.model.predict(dataset, verbose=False)
 
-    def train(self, history: pd.DataFrame, sample_pct, batch_pct, epochs, patience):
-        features = self.data_extractor.extract(history, self.model.input_names)
-        labels = self.data_extractor.extract(history, self.model.output_names)
-        train_dataset, test_dataset = self.create_dataset(features, labels, len(history), sample_pct, batch_pct)
+    def train(self, histories, sample_pct, batch_pct, epochs, patience):
+        num_samples = 0
+        for history in histories:
+            num_samples += len(history)
+
+        features = self.extract_and_concat(histories, self.data_extractor, self.model.input_names)
+        labels = self.extract_and_concat(histories, self.data_extractor, self.model.output_names)
+        train_dataset, test_dataset = self.create_dataset(features, labels, num_samples, sample_pct, batch_pct)
         self.fit_model(self.model, train_dataset, test_dataset, epochs, patience)
         self.eval_model(self.model, train_dataset, 'train')
         self.eval_model(self.model, test_dataset, 'test')
 
     @staticmethod
-    def create_dataset(features, labels, num_samples, sample_pct, batch_pct):
-        num_train_samples = int(num_samples * sample_pct)
+    def extract_and_concat(histories, data_extractor, names):
+        datas = [data_extractor.extract(history, names) for history in histories]
+        return {name: pd.concat([data[name] for data in datas]) for name in names}
+
+    @staticmethod
+    def create_dataset(features, labels, num_samples, train_pct, batch_pct):
+        num_train_samples = int(num_samples * train_pct)
         num_test_samples = num_samples - num_train_samples
 
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
+        dataset = dataset.shuffle(num_samples, reshuffle_each_iteration=False)
 
         train_dataset = dataset.take(num_train_samples).batch(int(num_train_samples * batch_pct))
         test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)

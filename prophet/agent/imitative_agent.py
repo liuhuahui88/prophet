@@ -45,7 +45,7 @@ class ImitativeAgent(Agent):
         history = history.copy()
         history['ExpertAction'] = expert_actions
 
-        self.data_predictor.train(history, 0.9, 1, 100, 100)
+        self.data_predictor.train([history], 0.9, 1, 100, 100)
 
     @staticmethod
     def create_model():

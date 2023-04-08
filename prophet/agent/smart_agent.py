@@ -50,7 +50,7 @@ class SmartAgent(Agent):
         return score
 
     def observe(self, history: pd.DataFrame):
-        self.data_predictor.train(history, 0.9, 1, 100, 100)
+        self.data_predictor.train([history], 0.9, 1, 100, 100)
 
     @staticmethod
     def create_model(delta):
