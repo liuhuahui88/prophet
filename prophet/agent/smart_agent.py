@@ -22,8 +22,8 @@ class SmartAgent(Agent):
 
     def handle(self, ctx: Agent.Context):
         self.update(ctx)
-
-        action = self.predict(ctx)
+        score = self.predict(ctx)
+        action = Const.BID if score > 0 else Const.ASK
         if action == Const.ASK:
             ctx.ask(self.symbol)
         else:
@@ -47,7 +47,7 @@ class SmartAgent(Agent):
         if position == Const.FULL:
             score += self.delta
 
-        return Const.BID if score > 0 else Const.ASK
+        return score
 
     def observe(self, history: pd.DataFrame):
         self.data_predictor.train(history, 0.9, 1, 100, 100)

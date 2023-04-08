@@ -130,7 +130,6 @@ class BackTester:
             return self.__action
 
         def bid(self, symbol, cash=float('inf'), price=float('inf')):
-            assert self.__action is None
             self.__action = Const.BID
 
             cash = min(cash, self.__account.get_cash())
@@ -141,7 +140,6 @@ class BackTester:
                 self.__broker.trade(self.__account, symbol, volume, -cash)
 
         def ask(self, symbol, volume=float('inf'), price=0):
-            assert self.__action is None
             self.__action = Const.ASK
 
             volume = min(volume, self.__account.get_volume(symbol))

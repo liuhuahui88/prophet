@@ -17,8 +17,8 @@ class ImitativeAgent(Agent):
 
     def handle(self, ctx: Agent.Context):
         self.update(ctx)
-
-        action = self.predict(ctx)
+        score = self.predict(ctx)
+        action = Const.BID if score > 0.5 else Const.ASK
         if action == Const.ASK:
             ctx.ask(self.symbol)
         else:
@@ -39,7 +39,7 @@ class ImitativeAgent(Agent):
         # select the score for the last sample in prediction result
         score = result[position].ravel()[-1]
 
-        return Const.BID if score > 0.5 else Const.ASK
+        return score
 
     def observe(self, history: pd.DataFrame, expert_actions):
         history = history.copy()
