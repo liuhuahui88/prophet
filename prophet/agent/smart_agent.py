@@ -12,7 +12,7 @@ class SmartAgent(Agent):
 
     def __init__(self, symbol, commission_rate):
         self.symbol = symbol
-        self.history = pd.DataFrame(columns=['Close'])
+        self.history = pd.DataFrame(columns=['Close', 'Volume'])
 
         ask_friction = np.log(1 - commission_rate)
         bid_friction = np.log(1 / (1 + commission_rate))
@@ -30,7 +30,8 @@ class SmartAgent(Agent):
             ctx.bid(self.symbol)
 
     def update(self, ctx: Agent.Context):
-        record = pd.DataFrame({'Close': ctx.get_prices()[self.symbol]}, index=[len(self.history)])
+        data = {'Close': ctx.get_prices()[self.symbol], 'Volume': ctx.get_volumes()[self.symbol]}
+        record = pd.DataFrame(data, index=[len(self.history)])
         self.history = pd.concat([self.history, record])
 
     def predict(self, ctx: Agent.Context):
