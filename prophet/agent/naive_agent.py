@@ -1,11 +1,12 @@
 from prophet.agent.abstract_agent import Agent
 
 
-class SwitchAgent(Agent):
+class NaiveAgent(Agent):
 
-    def __init__(self, symbol, is_selling=False):
+    def __init__(self, symbol, is_selling=False, is_switching=False):
         self.symbol = symbol
         self.is_selling = is_selling
+        self.is_switching = is_switching
 
     def handle(self, ctx: Agent.Context):
         if self.is_selling:
@@ -13,4 +14,5 @@ class SwitchAgent(Agent):
         else:
             ctx.bid(self.symbol)
 
-        self.is_selling = not self.is_selling
+        if self.is_switching:
+            self.is_selling = not self.is_selling

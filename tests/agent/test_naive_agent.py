@@ -2,15 +2,15 @@ from unittest import TestCase
 
 from tests.agent.agent_context import *
 
-from prophet.agent.buy_and_hold_agent import *
+from prophet.agent.naive_agent import *
 
 
-class TestBuyAndHoldAgent(TestCase):
+class TestNaiveAgent(TestCase):
 
     def test_handle(self):
         symbol = '600000'
 
-        agent = BuyAndHoldAgent(symbol)
+        agent = NaiveAgent(symbol, is_selling=False, is_switching=True)
         account = Account(1000)
 
         ctx1 = AgentContextForTest(account, {symbol: 300}, {symbol: 1}, '2020-01-01')
@@ -26,6 +26,6 @@ class TestBuyAndHoldAgent(TestCase):
         ctx2 = AgentContextForTest(account, {symbol: 30}, {symbol: 1}, '2020-01-02')
         agent.handle(ctx2)
         self.assertEqual(ctx2.symbol, symbol)
-        self.assertEqual(ctx2.volume, None)
-        self.assertEqual(ctx2.cash, float('inf'))
-        self.assertEqual(ctx2.price, float('inf'))
+        self.assertEqual(ctx2.volume, float('inf'))
+        self.assertEqual(ctx2.cash, None)
+        self.assertEqual(ctx2.price, 0)

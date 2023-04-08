@@ -1,4 +1,4 @@
-from prophet.agent.buy_and_hold_agent import BuyAndHoldAgent
+from prophet.agent.naive_agent import NaiveAgent
 from prophet.agent.perfect_action_agent import PerfectActionAgent
 from prophet.agent.smart_agent import SmartAgent
 from prophet.bt.back_tester import *
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     smart_agent.observe(result.histories[0])
     bt.register('SMT', smart_agent)
 
-    bt.register('B&H', BuyAndHoldAgent(symbol))
+    bt.register('B&H', NaiveAgent(symbol))
 
     result = bt.back_test([symbol], train_end_date, test_end_date)
     result.print()

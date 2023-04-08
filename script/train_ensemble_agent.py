@@ -1,5 +1,5 @@
-from prophet.agent.buy_and_hold_agent import BuyAndHoldAgent
 from prophet.agent.ensemble_agent import EnsembleAgent
+from prophet.agent.naive_agent import NaiveAgent
 from prophet.agent.perfect_action_agent import PerfectActionAgent
 from prophet.agent.smart_agent import SmartAgent
 from prophet.bt.back_tester import *
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     bt.register('ENS', EnsembleAgent(agents))
 
     for symbol in symbols:
-        bt.register('B&H-' + symbol, BuyAndHoldAgent(symbol))
+        bt.register('B&H-' + symbol, NaiveAgent(symbol))
         bt.register('PAA-' + symbol, PerfectActionAgent(symbol, storage, commission_rate))
 
     result = bt.back_test(symbols, train_end_date, test_end_date)
