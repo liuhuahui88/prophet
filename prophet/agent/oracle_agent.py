@@ -12,17 +12,15 @@ class OracleAgent(Agent):
         self.indexes = {self.history.iloc[i].Date: i for i in range(len(self.history))}
 
         data_extractor = DataExtractor(commission_rate)
-        data = data_extractor.extract(self.history, ['perfect_action_when_empty', 'perfect_action_when_full'])
-        self.perfect_action_when_empty = data['perfect_action_when_empty']
-        self.perfect_action_when_full = data['perfect_action_when_full']
+        data = data_extractor.extract(self.history, ['oracle'])
+        self.oracle = data['oracle']
 
     def handle(self, ctx: Agent.Context):
         index = self.indexes[ctx.get_date()]
 
         volume = ctx.get_account().get_volume(self.symbol)
-        df = self.perfect_action_when_empty if volume == 0 else self.perfect_action_when_full
-
-        action = df['Action'].iloc[index]
+        position = 'Empty' if volume == 0 else 'Full'
+        action = self.oracle[position + 'Action'].iloc[index]
 
         if action == Const.ASK:
             ctx.ask(self.symbol)

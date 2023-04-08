@@ -18,8 +18,6 @@ class DataExtractor:
 
     @staticmethod
     def __create_graph(commission_rate):
-        discount = (1 - commission_rate) / (1 + commission_rate)
-
         graph = Graph()
 
         graph.register('history')
@@ -44,25 +42,9 @@ class DataExtractor:
         graph.register('next_log_gain', DataExtractor.Shift(-1), ['log_gain'])
         graph.register('next_direction', DataExtractor.Sign(), ['next_log_gain'])
 
-        graph.register('expert_action', DataExtractor.Get('ExpertAction', 'Action'), ['history'])
-        graph.register('expert_action_when_empty', DataExtractor.Fill(Const.ASK), ['expert_action'])
-        graph.register('expert_action_when_full', DataExtractor.Fill(Const.BID), ['expert_action'])
-
-        graph.register('days_to_cross_ub_of_bid', DataExtractor.DaysToCross(Const.UP, 1 / discount), ['price'])
-        graph.register('days_to_cross_lb_of_bid', DataExtractor.DaysToCross(Const.DOWN, 1), ['price'])
-
-        graph.register('days_to_cross_ub_of_ask', DataExtractor.DaysToCross(Const.UP, 1), ['price'])
-        graph.register('days_to_cross_lb_of_ask', DataExtractor.DaysToCross(Const.DOWN, discount), ['price'])
-
-        graph.register('perfect_indicator_of_bid', DataExtractor.PerfectIndicator(1, 1 / discount), ['price'])
-        graph.register('perfect_indicator_of_ask', DataExtractor.PerfectIndicator(discount, 1), ['price'])
-
-        graph.register('perfect_action', DataExtractor.PerfectAction(commission_rate), ['price'])
-        graph.register('perfect_action_when_empty', DataExtractor.Get('EmptyAction', 'Action'), ['perfect_action'])
-        graph.register('perfect_action_when_full', DataExtractor.Get('FullAction', 'Action'), ['perfect_action'])
-
-        graph.register('perfect_advantage_when_empty', DataExtractor.PerfectAdvantage('Empty'), ['perfect_action'])
-        graph.register('perfect_advantage_when_full', DataExtractor.PerfectAdvantage('Full'), ['perfect_action'])
+        graph.register('oracle', DataExtractor.Oracle(commission_rate), ['price'])
+        graph.register('oracle_empty_advantage', DataExtractor.Get('EmptyAdvantage', 'Advantage'), ['oracle'])
+        graph.register('oracle_full_advantage', DataExtractor.Get('FullAdvantage', 'Advantage'), ['oracle'])
 
         return graph
 
@@ -216,70 +198,16 @@ class DataExtractor:
             df = pd.DataFrame({'Flip': result})
             return df
 
-    class DaysToCross(Graph.Function):
-
-        def __init__(self, direction, multiplier):
-            self.direction = direction
-            self.multiplier = multiplier
-
-        def compute(self, inputs):
-            prices = inputs[0].iloc[:, 0].tolist()
-            result = []
-            for i in range(len(prices)):
-                days_to_cross = float('inf')
-                for j in range(i + 1, len(prices)):
-                    if self.direction * (prices[j] - prices[i] * self.multiplier) > 0:
-                        days_to_cross = j - i
-                        break
-                result.append(days_to_cross)
-            df = pd.DataFrame({'DaysToCross': result})
-            return df
-
-    class PerfectIndicator(Graph.Function):
-
-        def __init__(self, lb, ub):
-            self.lb = lb
-            self.ub = ub
-
-        def compute(self, inputs):
-            prices = inputs[0].iloc[:, 0].tolist()
-            result = []
-            for i in range(len(prices)):
-                f = Const.DOWN
-                for j in range(i + 1, len(prices)):
-                    if prices[j] > prices[i] * self.ub:
-                        f = Const.UP
-                        break
-                    if prices[j] < prices[i] * self.lb:
-                        f = Const.DOWN
-                        break
-                result.append(f)
-            df = pd.DataFrame({'Indicator': result})
-            return df
-
-    class PerfectAction(Graph.Function):
+    class Oracle(Graph.Function):
 
         def __init__(self, commission_rate):
             self.action_generator = ActionGenerator(commission_rate)
 
         def compute(self, inputs):
-            cum_gains, actions, advantages = self.action_generator.generate(inputs[0].iloc[:, 0])
-            df = pd.DataFrame({'EmptyCumGain': cum_gains[Const.EMPTY], 'FullCumGain': cum_gains[Const.FULL],
-                               'EmptyAction': actions[Const.EMPTY], 'FullAction': actions[Const.FULL],
-                               'EmptyAdvantage': advantages[Const.EMPTY], 'FullAdvantage': advantages[Const.FULL]
-                               })
+            actions, advantages, cum_gains = self.action_generator.generate(inputs[0].iloc[:, 0])
+            df = pd.DataFrame({
+                'EmptyAction': actions[Const.EMPTY], 'FullAction': actions[Const.FULL],
+                'EmptyAdvantage': advantages[Const.EMPTY], 'FullAdvantage': advantages[Const.FULL],
+                'EmptyCumGain': cum_gains[Const.EMPTY], 'FullCumGain': cum_gains[Const.FULL],
+            })
             return df
-
-    class PerfectAdvantage(Graph.Function):
-
-        def __init__(self, position_name):
-            self.cum_gain_name = '{}CumGain'.format(position_name)
-            self.action_name = '{}Action'.format(position_name)
-            self.advantage_name = '{}Advantage'.format(position_name)
-
-        def compute(self, inputs):
-            output_df = pd.DataFrame()
-            output_df['Advantage'] = inputs[0][self.action_name]
-            output_df['Advantage'] = output_df['Advantage'].apply(lambda x: -1 if x == Const.ASK else 1)
-            output_df['Advantage'] = output_df['Advantage'] * inputs[0][self.advantage_name]
-            return output_df

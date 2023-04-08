@@ -13,9 +13,9 @@ class ActionGenerator:
     def generate(self, prices):
         gains = [np.log(prices[i]) - np.log(prices[i - 1]) for i in range(1, len(prices))]
 
-        cum_gains = [[0], [0]]
         actions = [[Const.ASK], [Const.BID]]
         advantages = [[0], [0]]
+        cum_gains = [[0], [0]]
 
         for gain in reversed(gains):
             empty_cum_gains = cum_gains[Const.EMPTY][-1]
@@ -23,18 +23,18 @@ class ActionGenerator:
 
             empty_ask_empty = empty_cum_gains
             empty_bid_full = full_cum_gains + self.bid_friction + gain
-            cum_gains[Const.EMPTY].append(max(empty_ask_empty, empty_bid_full))
             actions[Const.EMPTY].append(Const.ASK if empty_ask_empty > empty_bid_full else Const.BID)
-            advantages[Const.EMPTY].append(abs(empty_ask_empty - empty_bid_full))
+            advantages[Const.EMPTY].append(-(empty_ask_empty - empty_bid_full))
+            cum_gains[Const.EMPTY].append(max(empty_ask_empty, empty_bid_full))
 
             full_ask_empty = empty_cum_gains + self.ask_friction
             full_bid_full = full_cum_gains + gain
-            cum_gains[Const.FULL].append(max(full_ask_empty, full_bid_full))
             actions[Const.FULL].append(Const.ASK if full_ask_empty > full_bid_full else Const.BID)
-            advantages[Const.FULL].append(abs(full_ask_empty - full_bid_full))
+            advantages[Const.FULL].append(-(full_ask_empty - full_bid_full))
+            cum_gains[Const.FULL].append(max(full_ask_empty, full_bid_full))
 
-        for matrix in [cum_gains, actions, advantages]:
+        for matrix in [actions, advantages, cum_gains]:
             matrix[Const.EMPTY].reverse()
             matrix[Const.FULL].reverse()
 
-        return cum_gains, actions, advantages
+        return actions, advantages, cum_gains

@@ -68,7 +68,7 @@ class SmartAgent(Agent):
         x = tf.keras.layers.BatchNormalization(momentum=0)(x)
         x = tf.keras.layers.Dense(128, activation='relu')(x)
         x = tf.keras.layers.BatchNormalization(momentum=0)(x)
-        x = tf.keras.layers.Dense(1, activation='linear', name='perfect_advantage_when_empty')(x)
+        x = tf.keras.layers.Dense(1, activation='linear', name='oracle_empty_advantage')(x)
 
         model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
@@ -102,7 +102,7 @@ class SmartAgent(Agent):
             return advt_pair(y_true, y_pred, soft)
 
         model.compile(optimizer='adam',
-                      loss={'perfect_advantage_when_empty': 'mse'},
+                      loss={'oracle_empty_advantage': 'mse'},
                       metrics=[hard_advt, hinge_advt, soft_advt, Metric.me, Metric.r2])
 
         return model
