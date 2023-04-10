@@ -25,9 +25,9 @@ class DataPredictor:
         features = self.extract_and_concat(histories, self.data_extractor, self.model.input_names)
         labels = self.extract_and_concat(histories, self.data_extractor, self.model.output_names)
         train_dataset, test_dataset = self.create_dataset(features, labels, num_samples, sample_pct, batch_pct)
-        self.fit_model(self.model, train_dataset, test_dataset, epochs, patience)
-        self.eval_model(self.model, train_dataset, 'train')
-        self.eval_model(self.model, test_dataset, 'test')
+        self.fit_model(train_dataset, test_dataset, epochs, patience)
+        self.eval_model(train_dataset, 'train')
+        self.eval_model(test_dataset, 'test')
 
     @staticmethod
     def extract_and_concat(histories, data_extractor, names):
@@ -51,25 +51,31 @@ class DataPredictor:
 
         return train_dataset, test_dataset
 
-    @staticmethod
-    def fit_model(model: tf.keras.models.Model, train_dataset, test_dataset, epochs, patience):
-        logdir = "logs/fit/" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)
+    def fit_model(self, train_dataset, test_dataset, epochs, patience):
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        log_dir = "logs/fit/" + timestamp
+        tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience)
 
-        model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False,
-                  callbacks=[tensor_board_callback, early_stopping_callback])
+        self.model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False,
+                       callbacks=[tensor_board_callback, early_stopping_callback])
 
-    @staticmethod
-    def eval_model(model: tf.keras.models.Model, dataset, name):
-        model.evaluate(dataset)
+    def eval_model(self, dataset, name):
+        self.model.evaluate(dataset)
 
-        predictions = model.predict(dataset, verbose=False)
-        if len(model.output_names) == 1:
+        predictions = self.model.predict(dataset, verbose=False)
+        if len(self.model.output_names) == 1:
             predictions = [predictions]
 
         df = pd.DataFrame()
-        for i in range(len(model.output_names)):
-            df[model.output_names[i]] = predictions[i].ravel()
+        for i in range(len(self.model.output_names)):
+            df[self.model.output_names[i]] = predictions[i].ravel()
         df.to_csv('csvs/prediction_{}.csv'.format(name), index=False)
+
+    def save_model(self, path):
+        self.model.save(path)
+
+    def load_model(self, path):
+        self.model = tf.keras.models.load_model(path, compile=False)
