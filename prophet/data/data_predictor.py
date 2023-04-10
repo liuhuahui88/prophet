@@ -8,9 +8,21 @@ from prophet.data.data_extractor import DataExtractor
 
 class DataPredictor:
 
-    def __init__(self, model: tf.keras.models.Model, data_extractor: DataExtractor):
-        self.model = model
+    def __init__(self):
+        self.data_extractor = None
+        self.model = None
+
+    def set_data_extractor(self, data_extractor: DataExtractor):
         self.data_extractor = data_extractor
+
+    def set_model(self, model: tf.keras.models.Model):
+        self.model = model
+
+    def save_model(self, path):
+        self.model.save(path)
+
+    def load_model(self, path):
+        self.model = tf.keras.models.load_model(path, compile=False)
 
     def predict(self, history: pd.DataFrame):
         size = len(history)
@@ -19,7 +31,7 @@ class DataPredictor:
 
         dataset = tf.data.Dataset.from_tensor_slices(features)
 
-        results = self.invoke_model(dataset, size)
+        results = self.__invoke_model(dataset, size)
 
         return results
 
@@ -31,15 +43,15 @@ class DataPredictor:
 
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
 
-        self.fit_model(dataset, size, train_pct, batch_pct, epochs, patience, verbose)
+        self.__fit_model(dataset, size, train_pct, batch_pct, epochs, patience, verbose)
 
-        results = self.invoke_model(dataset, size)
+        results = self.__invoke_model(dataset, size)
 
         values = list(features.values()) + list(labels.values()) + list(results.values())
         samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
         samples.to_csv('csvs/feature_label_result.csv', index=False)
 
-    def fit_model(self, dataset, size, train_pct, batch_pct, epochs, patience, verbose):
+    def __fit_model(self, dataset, size, train_pct, batch_pct, epochs, patience, verbose):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         log_dir = "logs/fit/" + timestamp
@@ -58,7 +70,7 @@ class DataPredictor:
         self.model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=verbose,
                        callbacks=[tensor_board_callback, early_stopping_callback])
 
-    def invoke_model(self, dataset, size):
+    def __invoke_model(self, dataset, size):
         predictions = self.model.predict(dataset.batch(size), verbose=False)
 
         if len(self.model.output_names) == 1:
@@ -70,9 +82,3 @@ class DataPredictor:
             results[self.model.output_names[i]] = df
 
         return results
-
-    def save_model(self, path):
-        self.model.save(path)
-
-    def load_model(self, path):
-        self.model = tf.keras.models.load_model(path, compile=False)
