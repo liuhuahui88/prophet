@@ -16,6 +16,11 @@ class DataExtractor:
     def extract(self, history: pd.DataFrame, names):
         return self.graph.compute(names, {'history': history})
 
+    def extract_and_concat(self, histories, names):
+        histories = [history for history in histories if len(history) != 0]
+        datas = [self.extract(history, names) for history in histories]
+        return {name: pd.concat([data[name] for data in datas]) for name in names}
+
     @staticmethod
     def __create_graph(commission_rate):
         graph = Graph()

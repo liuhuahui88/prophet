@@ -22,18 +22,12 @@ class DataPredictor:
         for history in histories:
             num_samples += len(history)
 
-        features = self.extract_and_concat(histories, self.data_extractor, self.model.input_names)
-        labels = self.extract_and_concat(histories, self.data_extractor, self.model.output_names)
+        features = self.data_extractor.extract_and_concat(histories, self.model.input_names)
+        labels = self.data_extractor.extract_and_concat(histories, self.model.output_names)
         train_dataset, test_dataset = self.create_dataset(features, labels, num_samples, sample_pct, batch_pct)
         self.fit_model(train_dataset, test_dataset, epochs, patience, verbose)
         self.eval_model(train_dataset, 'train', verbose)
         self.eval_model(test_dataset, 'test', verbose)
-
-    @staticmethod
-    def extract_and_concat(histories, data_extractor, names):
-        histories = [history for history in histories if len(history) != 0]
-        datas = [data_extractor.extract(history, names) for history in histories]
-        return {name: pd.concat([data[name] for data in datas]) for name in names}
 
     @staticmethod
     def create_dataset(features, labels, num_samples, train_pct, batch_pct):
