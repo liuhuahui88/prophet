@@ -35,7 +35,8 @@ class DataPredictor:
 
         results = self.invoke_model(dataset, size)
 
-        samples = pd.concat(list(features.values()) + list(labels.values()) + list(results.values()), axis=1)
+        values = list(features.values()) + list(labels.values()) + list(results.values())
+        samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
         samples.to_csv('csvs/feature_label_result.csv', index=False)
 
     def fit_model(self, dataset, size, train_pct, batch_pct, epochs, patience, verbose):
