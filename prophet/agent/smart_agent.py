@@ -37,10 +37,10 @@ class SmartAgent(Agent):
         # accelerate the prediction by processing the latest history only
         history = self.data_collector.get().tail(Const.WINDOW_SIZE)
 
-        result = self.data_predictor.predict(history)
+        results = self.data_predictor.predict(history)
 
         # select the score for the last sample in prediction result
-        score = result.ravel()[-1]
+        score = results['oracle_empty_advantage'].iloc[-1, 0]
 
         if ctx.get_account().get_volume(self.symbol) != 0:
             score += self.delta
