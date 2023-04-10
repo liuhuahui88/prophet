@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from prophet.utils.action_generator import ActionGenerator
 from prophet.utils.constant import Const
@@ -33,12 +33,33 @@ class DataExtractor:
         graph.register('prices', DataExtractor.Merge([DataExtractor.Shift(i) for i in range(0, 30)]), ['price'])
 
         graph.register('log_price', DataExtractor.Log(), ['price'])
+
         graph.register('log_gain', DataExtractor.Diff(1), ['log_price'])
+        graph.register('log_gain_mean', DataExtractor.Mean(20), ['log_gain'])
+        graph.register('log_gain_std', DataExtractor.Std(20), ['log_gain'])
+        graph.register('log_gain_skew', DataExtractor.Skew(20), ['log_gain'])
+        graph.register('log_gain_kurt', DataExtractor.Kurt(20), ['log_gain'])
+
+        graph.register('log_price_rank', DataExtractor.Rank(20), ['log_price'])
+        graph.register('log_price_rank_mean', DataExtractor.Mean(5), ['log_price_rank'])
+        graph.register('log_price_rank_std', DataExtractor.Std(5), ['log_price_rank'])
+        graph.register('log_price_rank_skew', DataExtractor.Skew(5), ['log_price_rank'])
+        graph.register('log_price_rank_kurt', DataExtractor.Kurt(5), ['log_price_rank'])
+
+        graph.register('log_price_rank_diff', DataExtractor.Diff(1), ['log_price_rank'])
+        graph.register('log_price_rank_diff_mean', DataExtractor.Mean(5), ['log_price_rank_diff'])
+        graph.register('log_price_rank_diff_std', DataExtractor.Std(5), ['log_price_rank_diff'])
+        graph.register('log_price_rank_diff_skew', DataExtractor.Skew(5), ['log_price_rank_diff'])
+        graph.register('log_price_rank_diff_kurt', DataExtractor.Kurt(5), ['log_price_rank_diff'])
+
+        graph.register('log_price_rank_diff_diff', DataExtractor.Diff(1), ['log_price_rank_diff'])
+        graph.register('log_price_rank_diff_diff_mean', DataExtractor.Mean(5), ['log_price_rank_diff_diff'])
+        graph.register('log_price_rank_diff_diff_std', DataExtractor.Std(5), ['log_price_rank_diff_diff'])
+        graph.register('log_price_rank_diff_diff_skew', DataExtractor.Skew(5), ['log_price_rank_diff_diff'])
+        graph.register('log_price_rank_diff_diff_kurt', DataExtractor.Kurt(5), ['log_price_rank_diff_diff'])
 
         graph.register('keep_lose', DataExtractor.Keep(lambda n: n < 0), ['log_gain'])
         graph.register('keep_gain', DataExtractor.Keep(lambda n: n > 0), ['log_gain'])
-
-        graph.register('log_price_rank', DataExtractor.Rank(5), ['log_price'])
 
         graph.register('short_term_stat', DataExtractor.Mean(10), ['log_price'])
         graph.register('long_term_stat', DataExtractor.Mean(25), ['log_price'])
