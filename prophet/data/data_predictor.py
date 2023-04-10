@@ -17,35 +17,27 @@ class DataPredictor:
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(len(history))
         return self.model.predict(dataset, verbose=False)
 
-    def train(self, histories, sample_pct, batch_pct, epochs, patience, verbose=False):
-        num_samples = 0
+    def train(self, histories, train_pct, batch_pct, epochs, patience, verbose=False):
+        dataset, size = self.create_dataset(histories)
+        self.fit_model(dataset, size, train_pct, batch_pct, epochs, patience, verbose)
+        self.eval_model(dataset, size, verbose)
+
+    def create_dataset(self, histories):
+        size = 0
         for history in histories:
-            num_samples += len(history)
+            size += len(history)
 
         features = self.data_extractor.extract_and_concat(histories, self.model.input_names)
         labels = self.data_extractor.extract_and_concat(histories, self.model.output_names)
-        train_dataset, test_dataset = self.create_dataset(features, labels, num_samples, sample_pct, batch_pct)
-        self.fit_model(train_dataset, test_dataset, epochs, patience, verbose)
-        self.eval_model(train_dataset, 'train', verbose)
-        self.eval_model(test_dataset, 'test', verbose)
-
-    @staticmethod
-    def create_dataset(features, labels, num_samples, train_pct, batch_pct):
-        num_train_samples = int(num_samples * train_pct)
-        num_test_samples = num_samples - num_train_samples
 
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
-        dataset = dataset.shuffle(num_samples, reshuffle_each_iteration=False)
-
-        train_dataset = dataset.take(num_train_samples).batch(int(num_train_samples * batch_pct))
-        test_dataset = dataset.skip(num_train_samples).batch(num_test_samples)
 
         samples = pd.concat([v for v in features.values()] + [v for v in labels.values()], axis=1)
         samples.to_csv('csvs/samples.csv', index=False)
 
-        return train_dataset, test_dataset
+        return dataset, size
 
-    def fit_model(self, train_dataset, test_dataset, epochs, patience, verbose):
+    def fit_model(self, dataset, size, train_pct, batch_pct, epochs, patience, verbose):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         log_dir = "logs/fit/" + timestamp
@@ -53,20 +45,30 @@ class DataPredictor:
 
         early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience)
 
+        dataset = dataset.shuffle(size, reshuffle_each_iteration=False)
+
+        train_size = int(size * train_pct)
+        batch_size = int(size * batch_pct)
+
+        train_dataset = dataset.take(train_size).batch(batch_size)
+        test_dataset = dataset.skip(train_size).batch(batch_size)
+
         self.model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=verbose,
                        callbacks=[tensor_board_callback, early_stopping_callback])
 
-    def eval_model(self, dataset, name, verbose):
-        self.model.evaluate(dataset, verbose=verbose)
+    def eval_model(self, dataset, size, verbose):
+        eval_dataset = dataset.batch(size)
 
-        predictions = self.model.predict(dataset, verbose=False)
+        self.model.evaluate(eval_dataset, verbose=verbose)
+
+        predictions = self.model.predict(eval_dataset, verbose=False)
         if len(self.model.output_names) == 1:
             predictions = [predictions]
 
         df = pd.DataFrame()
         for i in range(len(self.model.output_names)):
             df[self.model.output_names[i]] = predictions[i].ravel()
-        df.to_csv('csvs/prediction_{}.csv'.format(name), index=False)
+        df.to_csv('csvs/prediction.csv', index=False)
 
     def save_model(self, path):
         self.model.save(path)
