@@ -17,7 +17,7 @@ class DataPredictor:
         dataset = tf.data.Dataset.from_tensor_slices(features).batch(len(history))
         return self.model.predict(dataset, verbose=False)
 
-    def train(self, histories, sample_pct, batch_pct, epochs, patience):
+    def train(self, histories, sample_pct, batch_pct, epochs, patience, verbose=False):
         num_samples = 0
         for history in histories:
             num_samples += len(history)
@@ -25,9 +25,9 @@ class DataPredictor:
         features = self.extract_and_concat(histories, self.data_extractor, self.model.input_names)
         labels = self.extract_and_concat(histories, self.data_extractor, self.model.output_names)
         train_dataset, test_dataset = self.create_dataset(features, labels, num_samples, sample_pct, batch_pct)
-        self.fit_model(train_dataset, test_dataset, epochs, patience)
-        self.eval_model(train_dataset, 'train')
-        self.eval_model(test_dataset, 'test')
+        self.fit_model(train_dataset, test_dataset, epochs, patience, verbose)
+        self.eval_model(train_dataset, 'train', verbose)
+        self.eval_model(test_dataset, 'test', verbose)
 
     @staticmethod
     def extract_and_concat(histories, data_extractor, names):
@@ -51,7 +51,7 @@ class DataPredictor:
 
         return train_dataset, test_dataset
 
-    def fit_model(self, train_dataset, test_dataset, epochs, patience):
+    def fit_model(self, train_dataset, test_dataset, epochs, patience, verbose):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         log_dir = "logs/fit/" + timestamp
@@ -59,11 +59,11 @@ class DataPredictor:
 
         early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience)
 
-        self.model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=False,
+        self.model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=verbose,
                        callbacks=[tensor_board_callback, early_stopping_callback])
 
-    def eval_model(self, dataset, name):
-        self.model.evaluate(dataset)
+    def eval_model(self, dataset, name, verbose):
+        self.model.evaluate(dataset, verbose=verbose)
 
         predictions = self.model.predict(dataset, verbose=False)
         if len(self.model.output_names) == 1:
