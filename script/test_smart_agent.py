@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     sota_data_predictor = DataPredictor()
     sota_data_predictor.set_data_extractor(DataExtractor(commission_rate))
-    sota_data_predictor.load_model('models/sota')
+    sota_data_predictor.load_model('models/sota_reg')
 
     for symbol in [s for s in storage.get_symbols() if s[0] == '3' and s <= '300010']:
         bt = BackTester(storage, Broker(commission_rate))
