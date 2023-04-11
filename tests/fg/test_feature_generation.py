@@ -3,47 +3,50 @@ from unittest import TestCase
 import numpy as np
 import pandas as pd
 
-from prophet.data.data_extractor import DataExtractor
+from prophet.fg.aggregator import Aggregator
+from prophet.fg.commons import Get, Fill, Merge
+from prophet.fg.math import Log, Sign
+from prophet.fg.series import Shift, Diff, Keep, Flip
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 
 
-class TestDataExtractor(TestCase):
+class TestFeatureGeneration(TestCase):
 
     def test_get(self):
         x = pd.DataFrame({'n': [1, 2, 3], 'm': [4, 5, 6]})
 
-        get = DataExtractor.Get('n')
+        get = Get('n')
         y1 = pd.DataFrame({'n': [1, 2, 3]})
         self.assert_df_equal(get.compute([x]), y1)
 
-        get_as = DataExtractor.Get('m', 'x')
+        get_as = Get('m', 'x')
         y2 = pd.DataFrame({'x': [4, 5, 6]})
         self.assert_df_equal(get_as.compute([x]), y2)
 
     def test_fill(self):
-        self.check(DataExtractor.Fill(2), [1, np.nan, 3], [1, 2, 3])
+        self.check(Fill(2), [1, np.nan, 3], [1, 2, 3])
 
     def test_log(self):
-        self.check(DataExtractor.Log(), [1, 1, 1], [0, 0, 0])
+        self.check(Log(), [1, 1, 1], [0, 0, 0])
 
     def test_sign(self):
-        self.check(DataExtractor.Sign(), [10, 0, -10], [1, 0, -1])
+        self.check(Sign(), [10, 0, -10], [1, 0, -1])
 
     def test_shift(self):
-        self.check(DataExtractor.Shift(0), [1, 2, 3], [1, 2, 3])
-        self.check(DataExtractor.Shift(2), [1, 2, 3], [0, 0, 1])
-        self.check(DataExtractor.Shift(-2), [1, 2, 3], [3, 0, 0])
+        self.check(Shift(0), [1, 2, 3], [1, 2, 3])
+        self.check(Shift(2), [1, 2, 3], [0, 0, 1])
+        self.check(Shift(-2), [1, 2, 3], [3, 0, 0])
 
     def test_diff(self):
-        self.check(DataExtractor.Diff(0), [1, 2, 3], [0, 0, 0])
-        self.check(DataExtractor.Diff(0, future=True), [1, 2, 3], [0, 0, 0])
-        self.check(DataExtractor.Diff(1), [1, 2, 3], [0, 1, 1])
-        self.check(DataExtractor.Diff(1, future=True), [1, 2, 3], [1, 1, 0])
+        self.check(Diff(0), [1, 2, 3], [0, 0, 0])
+        self.check(Diff(0, future=True), [1, 2, 3], [0, 0, 0])
+        self.check(Diff(1), [1, 2, 3], [0, 1, 1])
+        self.check(Diff(1, future=True), [1, 2, 3], [1, 1, 0])
 
     def test_agg(self):
 
-        class Sum(DataExtractor.Agg):
+        class Sum(Aggregator):
 
             def aggregate(self, data):
                 return data.sum()
@@ -63,16 +66,16 @@ class TestDataExtractor(TestCase):
     def test_merge(self):
         x = pd.DataFrame({'n': [1, 2, 3], 'm': [4, 5, 6]})
 
-        get_n = DataExtractor.Get('n')
-        get_m = DataExtractor.Get('m')
-        merge = DataExtractor.Merge([get_n, get_m])
+        get_n = Get('n')
+        get_m = Get('m')
+        merge = Merge([get_n, get_m])
 
         self.assert_df_equal(merge.compute([x]), x)
 
     def test_keep(self):
         x = pd.DataFrame({'n': [-1, 1, 1, 1, -1, -1, 1]})
 
-        actual = DataExtractor.Keep(lambda z: z < 0).compute([x])
+        actual = Keep(lambda z: z < 0).compute([x])
         expected = pd.DataFrame({'Keep': [1, 0, 0, 0, 1, 2, 0]})
         self.assert_df_equal(actual, expected)
 
@@ -80,7 +83,7 @@ class TestDataExtractor(TestCase):
         x1 = pd.DataFrame({'n': [0, 0, 1, 0, 0, 1, 1, 0]})
         x2 = pd.DataFrame({'n': [0, 1, 0, 1, 1, 0, 0, 0]})
 
-        actual = DataExtractor.Flip().compute([x1, x2])
+        actual = Flip().compute([x1, x2])
         expected = pd.DataFrame({'Flip': [0, -1, 1, -1, 0, 1, 0, 0]})
         self.assert_df_equal(actual, expected)
 
