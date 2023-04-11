@@ -35,23 +35,26 @@ class DataPredictor:
 
         return results
 
-    def train(self, histories, train_pct, batch_pct, epochs, patience, verbose=False):
-        size = sum([len(history) for history in histories])
+    def learn(self, train_histories, test_histories, batch_size, epochs, patience, verbose=False):
+        train_features, train_labels, train_dataset, train_size = self.__create_dataset(train_histories)
+        test_features, test_labels, test_dataset, test_size = self.__create_dataset(test_histories)
 
+        self.__fit_model(train_dataset, train_size, test_dataset, test_size, batch_size, epochs, patience, verbose)
+
+        train_results = self.__invoke_model(train_dataset, train_size)
+        test_results = self.__invoke_model(test_dataset, test_size)
+
+        self.__save_sample(train_features, train_labels, train_results, 'train')
+        self.__save_sample(test_features, test_labels, test_results, 'test')
+
+    def __create_dataset(self, histories):
         features = self.data_extractor.extract_and_concat(histories, self.model.input_names)
         labels = self.data_extractor.extract_and_concat(histories, self.model.output_names)
-
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
+        size = sum([len(h) for h in histories])
+        return features, labels, dataset, size
 
-        self.__fit_model(dataset, size, train_pct, batch_pct, epochs, patience, verbose)
-
-        results = self.__invoke_model(dataset, size)
-
-        values = list(features.values()) + list(labels.values()) + list(results.values())
-        samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
-        samples.to_csv('csvs/feature_label_result.csv', index=False)
-
-    def __fit_model(self, dataset, size, train_pct, batch_pct, epochs, patience, verbose):
+    def __fit_model(self, train_dataset, train_size, test_dataset, test_size, batch_size, epochs, patience, verbose):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         log_dir = "logs/fit/" + timestamp
@@ -59,13 +62,8 @@ class DataPredictor:
 
         early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience)
 
-        dataset = dataset.shuffle(size, reshuffle_each_iteration=False)
-
-        train_size = int(size * train_pct)
-        batch_size = int(size * batch_pct)
-
-        train_dataset = dataset.take(train_size).batch(batch_size)
-        test_dataset = dataset.skip(train_size).batch(batch_size)
+        train_dataset = train_dataset.shuffle(train_size, reshuffle_each_iteration=False).batch(batch_size)
+        test_dataset = test_dataset.shuffle(test_size, reshuffle_each_iteration=False).batch(batch_size)
 
         self.model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=verbose,
                        callbacks=[tensor_board_callback, early_stopping_callback])
@@ -82,3 +80,8 @@ class DataPredictor:
             results[self.model.output_names[i]] = df
 
         return results
+
+    def __save_sample(self, features, labels, results, prefix):
+        values = list(features.values()) + list(labels.values()) + list(results.values())
+        samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
+        samples.to_csv('csvs/{}_samples.csv'.format(prefix), index=False)

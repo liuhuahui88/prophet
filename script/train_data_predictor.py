@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     histories = [storage.load_history(s, '2010-01-01', '2011-01-01') for s in symbols]
 
-    data_predictor.train(histories, 0.99, 1, 200, 200, False)
+    data_predictor.learn(histories, histories, 10000, 200, 200, False)
 
     data_predictor.save_model('models/experimental')
 

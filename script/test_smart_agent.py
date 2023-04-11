@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     exp_data_predictor = DataPredictor()
     exp_data_predictor.set_data_extractor(DataExtractor(commission_rate))
-    exp_data_predictor.load_model('models/experimental')
+    exp_data_predictor.load_model('models/exp_reg')
 
     sota_data_predictor = DataPredictor()
     sota_data_predictor.set_data_extractor(DataExtractor(commission_rate))

@@ -55,10 +55,7 @@ if __name__ == '__main__':
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
     model.compile(optimizer='adam', loss='mse',
-                  metrics=[Metric.create_hard_advt(log_friction),
-                           Metric.create_hinge_advt(log_friction),
-                           Metric.create_soft_advt(log_friction),
-                           Metric.me, Metric.r2])
+                  metrics=[Metric.r2, Metric.create_hard_advt(log_friction)])
 
     data_predictor = DataPredictor()
     data_predictor.set_data_extractor(DataExtractor(commission_rate))
@@ -66,8 +63,9 @@ if __name__ == '__main__':
 
     symbols = [s for s in storage.get_symbols() if s[0] == '3' and s <= '300800']
 
-    histories = [storage.load_history(s, '2010-01-01', '2022-01-01') for s in symbols]
+    train_histories = [storage.load_history(s, '2010-01-01', '2021-01-01') for s in symbols]
+    test_histories = [storage.load_history(s, '2021-01-01', '2022-01-01') for s in symbols]
 
-    data_predictor.train(histories, 0.9, 0.001, 1000, 3, True)
+    data_predictor.learn(train_histories, test_histories, 1000, 1000, 3, True)
 
-    data_predictor.save_model('models/experimental')
+    data_predictor.save_model('models/exp_reg')
