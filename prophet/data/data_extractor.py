@@ -66,7 +66,7 @@ class DataExtractor:
         graph.register('flip', DataExtractor.Flip(), ['short_term_stat', 'long_term_stat'])
 
         graph.register('next_log_gain', DataExtractor.Shift(-1), ['log_gain'])
-        graph.register('next_direction', DataExtractor.Sign(), ['next_log_gain'])
+        graph.register('next_direction', DataExtractor.IsPositive(), ['next_log_gain'])
 
         graph.register('oracle', DataExtractor.Oracle(commission_rate), ['price'])
         graph.register('oracle_empty_advantage', DataExtractor.Get('EmptyAdvantage', 'Advantage'), ['oracle'])
@@ -102,6 +102,11 @@ class DataExtractor:
 
         def compute(self, inputs):
             return np.sign(inputs[0])
+
+    class IsPositive(Graph.Function):
+
+        def compute(self, inputs):
+            return (np.sign(inputs[0]) + 1) / 2
 
     class Shift(Graph.Function):
 
