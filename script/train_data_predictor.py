@@ -16,6 +16,7 @@ if __name__ == '__main__':
 
     commission_rate = 0.01
     log_friction = -(np.log(1 - commission_rate) + np.log(1 / (1 + commission_rate)))
+    data_extractor = DataExtractor(commission_rate)
 
     prices = tf.keras.layers.Input(name='prices', shape=(30,))
     inputs = [prices]
@@ -41,24 +42,24 @@ if __name__ == '__main__':
                            Metric.me, Metric.r2])
 
     data_predictor = DataPredictor()
-    data_predictor.set_data_extractor(DataExtractor(commission_rate))
     data_predictor.set_model(model)
 
     symbol = '600000'
-    symbols = ['600000']
+    symbols = [symbol]
 
-    histories = [storage.load_history(s, '2010-01-01', '2011-01-01') for s in symbols]
+    histories = storage.load_histories(symbols, '2010-01-01', '2011-01-01')
 
-    data_predictor.learn(histories, histories, 10000, 200, 200, False)
+    data_predictor.learn(histories, histories, data_extractor, 10000, 200, 200, False)
 
-    data_predictor.save_model('models/experimental')
+    data_predictor.save('models/experimental')
 
     bt = BackTester(storage, Broker(commission_rate))
 
-    bt.register('SMT', SmartAgent(symbol, data_predictor, 'oracle_empty_advantage', 0, log_friction))
+    bt.register('SMT', SmartAgent(symbol, storage, data_extractor, data_predictor, log_friction))
     bt.register('B&H', NaiveAgent(symbol))
-    bt.register('ORA', OracleAgent(symbol, storage, commission_rate))
+    bt.register('ORA', OracleAgent(symbol, storage, data_extractor))
 
-    result = bt.back_test(symbols, '2010-01-01', '2011-01-01')
+    # TODO: Fixes Missing Data Issue
+    result = bt.back_test(symbols, '2010-07-01', '2011-01-01')
     result.print()
     result.plot('SMT')

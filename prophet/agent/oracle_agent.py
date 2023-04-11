@@ -6,13 +6,13 @@ from prophet.utils.constant import Const
 
 class OracleAgent(Agent):
 
-    def __init__(self, symbol, storage: StockDataStorage, commission_rate):
+    def __init__(self, symbol, storage: StockDataStorage, data_extractor: DataExtractor):
         self.symbol = symbol
-        self.history = storage.load_history(symbol)
-        self.indexes = {self.history.iloc[i].Date: i for i in range(len(self.history))}
 
-        data_extractor = DataExtractor(commission_rate)
-        data = data_extractor.extract(self.history, ['oracle'])
+        history = storage.load_history(symbol)
+        self.indexes = {history.iloc[i].Date: i for i in range(len(history))}
+
+        data = data_extractor.extract(history, ['oracle'])
         self.oracle = data['oracle']
 
     def handle(self, ctx: Agent.Context):

@@ -23,7 +23,7 @@ class BackTester:
 
     def back_test(self, symbols, start_date=None, end_date=None, verbose=False):
         names = [self.storage.get_name(symbol) for symbol in symbols]
-        histories = [self.storage.load_history(symbol, start_date, end_date) for symbol in symbols]
+        histories = self.storage.load_histories(symbols, start_date, end_date)
 
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 

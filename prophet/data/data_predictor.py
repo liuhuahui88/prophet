@@ -8,26 +8,20 @@ from prophet.data.data_extractor import DataExtractor
 
 class DataPredictor:
 
-    def __init__(self):
-        self.data_extractor = None
-        self.model = None
-
-    def set_data_extractor(self, data_extractor: DataExtractor):
-        self.data_extractor = data_extractor
-
-    def set_model(self, model: tf.keras.models.Model):
+    def __init__(self, model):
         self.model = model
 
-    def save_model(self, path):
+    def save(self, path):
         self.model.save(path)
 
-    def load_model(self, path):
-        self.model = tf.keras.models.load_model(path, compile=False)
+    @staticmethod
+    def load(path):
+        return DataPredictor(tf.keras.models.load_model(path, compile=False))
 
-    def predict(self, history: pd.DataFrame):
+    def predict(self, history, data_extractor: DataExtractor):
         size = len(history)
 
-        features = self.data_extractor.extract(history, self.model.input_names)
+        features = data_extractor.extract(history, self.model.input_names)
 
         dataset = tf.data.Dataset.from_tensor_slices(features)
 
@@ -35,9 +29,9 @@ class DataPredictor:
 
         return results
 
-    def learn(self, train_histories, test_histories, batch_size, epochs, patience, verbose=False):
-        train_features, train_labels, train_dataset, train_size = self.__create_dataset(train_histories)
-        test_features, test_labels, test_dataset, test_size = self.__create_dataset(test_histories)
+    def learn(self, train_histories, test_histories, data_extractor, batch_size, epochs, patience, verbose=False):
+        train_features, train_labels, train_dataset, train_size = self.__create_dataset(train_histories, data_extractor)
+        test_features, test_labels, test_dataset, test_size = self.__create_dataset(test_histories, data_extractor)
 
         self.__fit_model(train_dataset, train_size, test_dataset, test_size, batch_size, epochs, patience, verbose)
 
@@ -47,9 +41,9 @@ class DataPredictor:
         self.__save_sample(train_features, train_labels, train_results, 'train')
         self.__save_sample(test_features, test_labels, test_results, 'test')
 
-    def __create_dataset(self, histories):
-        features = self.data_extractor.extract_and_concat(histories, self.model.input_names)
-        labels = self.data_extractor.extract_and_concat(histories, self.model.output_names)
+    def __create_dataset(self, histories, data_extractor):
+        features = data_extractor.extract_and_concat(histories, self.model.input_names)
+        labels = data_extractor.extract_and_concat(histories, self.model.output_names)
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
         size = sum([len(h) for h in histories])
         return features, labels, dataset, size

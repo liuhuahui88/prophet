@@ -12,28 +12,32 @@ if __name__ == '__main__':
 
     commission_rate = 0.0
     log_friction = -(np.log(1 - commission_rate) + np.log(1 / (1 + commission_rate)))
+    extractor = DataExtractor(commission_rate)
 
-    exp_data_predictor = DataPredictor()
-    exp_data_predictor.set_data_extractor(DataExtractor(commission_rate))
-    exp_data_predictor.load_model('models/exp_reg')
+    exp_reg_predictor = DataPredictor.load('models/exp_reg')
+    sota_reg_predictor = DataPredictor.load('models/sota_reg')
+    exp_cls_predictor = DataPredictor.load('models/exp_cls')
+    sota_cls_predictor = DataPredictor.load('models/sota_cls')
 
-    sota_data_predictor = DataPredictor()
-    sota_data_predictor.set_data_extractor(DataExtractor(commission_rate))
-    sota_data_predictor.load_model('models/sota_reg')
-
-    symbols = [s for s in storage.get_symbols() if s[0] == '3' and s <= '300010']
+    symbols = storage.get_symbols(lambda s: s[0] == '3' and s <= '300010')
 
     bt = BackTester(storage, Broker(commission_rate))
 
-    exp_agents = [SmartAgent(s, exp_data_predictor, 'next_log_gain', 0, log_friction) for s in symbols]
-    bt.register('ENSEMBLE_EXP', EnsembleAgent(exp_agents))
+    exp_agents = [SmartAgent(s, storage, extractor, exp_reg_predictor, log_friction) for s in symbols]
+    bt.register('ENSEMBLE_EXP_REG', EnsembleAgent(exp_agents))
 
-    sota_agents = [SmartAgent(s, sota_data_predictor, 'next_log_gain', 0, log_friction) for s in symbols]
-    bt.register('ENSEMBLE_SOTA', EnsembleAgent(sota_agents))
+    sota_agents = [SmartAgent(s, storage, extractor, sota_reg_predictor, log_friction) for s in symbols]
+    bt.register('ENSEMBLE_SOTA_REG', EnsembleAgent(sota_agents))
+
+    exp_agents = [SmartAgent(s, storage, extractor, exp_cls_predictor, log_friction) for s in symbols]
+    bt.register('ENSEMBLE_EXP_CLS', EnsembleAgent(exp_agents))
+
+    sota_agents = [SmartAgent(s, storage, extractor, sota_cls_predictor, log_friction) for s in symbols]
+    bt.register('ENSEMBLE_SOTA_CLS', EnsembleAgent(sota_agents))
 
     for symbol in symbols:
         bt.register('BUY&HOLD_' + symbol, NaiveAgent(symbol))
 
-    result = bt.back_test(symbols, '2022-01-01', '2023-01-01', verbose=True)
+    result = bt.back_test(symbols, '2022-01-01', '2023-01-01')
     result.print()
     result.plot()

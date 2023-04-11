@@ -11,6 +11,7 @@ if __name__ == '__main__':
 
     commission_rate = 0.0
     log_friction = -(np.log(1 - commission_rate) + np.log(1 / (1 + commission_rate)))
+    extractor = DataExtractor(commission_rate)
 
     inputs = [
         # tf.keras.layers.Input(name='log_gain', shape=(1,)),
@@ -57,15 +58,13 @@ if __name__ == '__main__':
     model.compile(optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
                   metrics=['AUC', Metric.create_hard_advt(log_friction)])
 
-    data_predictor = DataPredictor()
-    data_predictor.set_data_extractor(DataExtractor(commission_rate))
-    data_predictor.set_model(model)
+    predictor = DataPredictor(model)
 
-    symbols = [s for s in storage.get_symbols() if s[0] == '3' and s <= '300800']
+    symbols = storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 
-    train_histories = [storage.load_history(s, '2010-01-01', '2021-01-01') for s in symbols]
-    test_histories = [storage.load_history(s, '2021-01-01', '2022-01-01') for s in symbols]
+    train_histories = storage.load_histories(symbols, '2010-01-01', '2021-01-01')
+    test_histories = storage.load_histories(symbols, '2021-01-01', '2022-01-01')
 
-    data_predictor.learn(train_histories, test_histories, 1000, 1000, 3, True)
+    predictor.learn(train_histories, test_histories, extractor, 1000, 1000, 3, True)
 
-    data_predictor.save_model('models/exp_cls')
+    predictor.save('models/temp_cls')

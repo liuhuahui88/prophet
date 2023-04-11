@@ -9,8 +9,8 @@ class StockDataStorage:
 
         self.__history_dir_path = history_dir_path
 
-    def get_symbols(self):
-        return list(self.__name_dict.keys())
+    def get_symbols(self, condition=lambda x: True):
+        return [k for k in self.__name_dict.keys() if condition(k)]
 
     def get_name(self, symbol):
         return self.__name_dict.get(symbol, 'UNKNOWN')
@@ -23,6 +23,9 @@ class StockDataStorage:
             history = history[history.Date < end_date]
         history = history.reset_index(drop=True)
         return history
+
+    def load_histories(self, symbols, start_date=None, end_date=None):
+        return [self.load_history(symbol, start_date, end_date) for symbol in symbols]
 
     def save_history(self, symbol, history_df):
         history_df.to_csv(self.__format_path(symbol), index=False)
