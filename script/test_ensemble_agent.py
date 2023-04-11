@@ -34,6 +34,6 @@ if __name__ == '__main__':
     for symbol in symbols:
         bt.register('BUY&HOLD_' + symbol, NaiveAgent(symbol))
 
-    result = bt.back_test(symbols, '2022-01-01', '2023-01-01')
+    result = bt.back_test(symbols, '2022-01-01', '2023-01-01', verbose=True)
     result.print()
     result.plot()

@@ -27,6 +27,6 @@ if __name__ == '__main__':
         bt.register('SMART_SOTA', SmartAgent(symbol, sota_data_predictor, 'next_log_gain', 0, log_friction))
         bt.register('BUY&HOLD', NaiveAgent(symbol))
 
-        result = bt.back_test([symbol], '2022-01-01', '2023-01-01')
+        result = bt.back_test([symbol], '2022-01-01', '2023-01-01', verbose=True)
         result.print()
         result.plot('SMART_EXP')

@@ -21,7 +21,7 @@ class BackTester:
     def register(self, name: str, agent: Agent):
         self.agents[name] = agent
 
-    def back_test(self, symbols, start_date=None, end_date=None):
+    def back_test(self, symbols, start_date=None, end_date=None, verbose=False):
         names = [self.storage.get_name(symbol) for symbol in symbols]
         histories = [self.storage.load_history(symbol, start_date, end_date) for symbol in symbols]
 
@@ -32,6 +32,8 @@ class BackTester:
             prices = self.__create_prices(symbols, histories, i)
             volumes = self.__create_volumes(symbols, histories, i)
             liquidities = self.__create_liquidities(symbols, histories, i)
+            if verbose:
+                print('testing date: ' + date)
             for case in cases:
                 case.handle(date, prices, volumes, liquidities)
 
