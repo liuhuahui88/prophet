@@ -1,33 +1,25 @@
-import numpy as np
-
-from prophet.agent.naive_agent import NaiveAgent
-from prophet.agent.smart_agent import SmartAgent
-from prophet.bt.back_tester import *
-from prophet.data.data_extractor import DataExtractor
 from prophet.data.data_predictor import DataPredictor
+from prophet.utils.play_ground import PlayGround
 
 if __name__ == '__main__':
-    storage = StockDataStorage('../data/chinese_stock_codes.csv', '../data/history')
+    play_ground = PlayGround(
+        name_file_path='../data/chinese_stock_codes.csv',
+        history_file_path='../data/history',
+        commission_rate=0.0)
 
-    commission_rate = 0.0
-    log_friction = -(np.log(1 - commission_rate) + np.log(1 / (1 + commission_rate)))
-    extractor = DataExtractor(commission_rate)
+    symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300010')
+    predictors = {
+        'EXP_REG': DataPredictor.load('models/exp_reg'),
+        'EXP_CLS': DataPredictor.load('models/exp_cls'),
+        'SOTA_REG': DataPredictor.load('models/sota_reg'),
+        'SOTA_CLS': DataPredictor.load('models/sota_cls'),
+    }
+    delta_free_list = ['EXP_REG', 'EXP_CLS', 'SOTA_REG', 'SOTA_CLS']
 
-    exp_reg_predictor = DataPredictor.load('models/exp_reg')
-    sota_reg_predictor = DataPredictor.load('models/sota_reg')
-    exp_cls_predictor = DataPredictor.load('models/exp_cls')
-    sota_cls_predictor = DataPredictor.load('models/sota_cls')
+    for symbol in symbols:
+        result = play_ground.test_smart_agent(
+            symbol, '2022-01-01', '2023-01-01',
+            predictors, delta_free_list, with_baseline=True)
 
-    for symbol in storage.get_symbols(lambda s: s[0] == '3' and s <= '300010'):
-        bt = BackTester(storage, Broker(commission_rate))
-
-        bt.register('SMART_EXP_REG', SmartAgent(symbol, storage, extractor, exp_reg_predictor, log_friction))
-        bt.register('SMART_SOTA_REG', SmartAgent(symbol, storage, extractor, sota_reg_predictor, log_friction))
-        bt.register('SMART_EXP_CLS', SmartAgent(symbol, storage, extractor, exp_cls_predictor, log_friction))
-        bt.register('SMART_SOTA_CLS', SmartAgent(symbol, storage, extractor, sota_cls_predictor, log_friction))
-
-        bt.register('BUY&HOLD', NaiveAgent(symbol))
-
-        result = bt.back_test([symbol], '2022-01-01', '2023-01-01')
         result.print()
         result.plot()
