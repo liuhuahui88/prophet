@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from prophet.utils.gain_distribution import GainDistribution
+from prophet.fg.utils.gain_distribution import GainDistribution
 
 
 class TestGainDistribution(TestCase):
@@ -19,3 +19,18 @@ class TestGainDistribution(TestCase):
 
         dist.update(-4, 15)
         self.assertAlmostEqual(dist.cdf(), 0.75, 4)
+
+    def test_rv(self):
+        dist = GainDistribution(3, 0.5, 0)
+
+        dist.update(1, 10)
+        self.assertAlmostEqual(dist.rv(), 0.5, 4)
+
+        dist.update(1, 10)
+        self.assertAlmostEqual(dist.rv(), 1.0, 4)
+
+        dist.update(1, 5)
+        self.assertAlmostEqual(dist.rv(), 1.0, 4)
+
+        dist.update(-4, 15)
+        self.assertAlmostEqual(dist.rv(), 0.3333, 4)

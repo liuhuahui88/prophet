@@ -3,10 +3,10 @@ from unittest import TestCase
 import numpy as np
 import pandas as pd
 
-from prophet.fg.aggregator import Aggregator
-from prophet.fg.commons import Get, Fill, Merge
-from prophet.fg.math import Log, Sign
-from prophet.fg.series import Shift, Diff, Keep, Flip
+from prophet.fg.function.aggregator import Aggregator
+from prophet.fg.function.commons import Get, Fill, Merge
+from prophet.fg.function.math import Log, Sign
+from prophet.fg.function.series import Shift, Diff, Keep, Flip
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 

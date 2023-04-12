@@ -43,5 +43,20 @@ class GainDistribution:
                 z_left += mass
         return 1 - z_left / z_total
 
+    def rv(self):
+        if len(self.buckets) <= 1:
+            return 0.5
 
+        z_total = 0
+        z_reversed = 0
+        for i in range(len(self.buckets)):
+            for j in range(i + 1, len(self.buckets)):
+                b1 = self.buckets[i]
+                b2 = self.buckets[j]
+                z_total += 1
+                if b1.gain == b2.gain:
+                    z_reversed += 0.5
+                elif not((b1.age < b2.age) ^ (b1.gain < b2.gain)):
+                    z_reversed += 1
+        return z_reversed / z_total
 

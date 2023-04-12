@@ -1,6 +1,6 @@
 import pandas as pd
 
-from prophet.utils.action_generator import ActionGenerator
+from prophet.fg.utils.action_generator import ActionGenerator
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 

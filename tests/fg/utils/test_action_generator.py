@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from prophet.utils.action_generator import ActionGenerator
+from prophet.fg.utils.action_generator import ActionGenerator
 
 
 class TestActionGenerator(TestCase):
