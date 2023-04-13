@@ -58,6 +58,6 @@ if __name__ == '__main__':
 
     predictor = play_ground.train_predictor(
         symbols, '2010-01-01', '2021-01-01', '2022-01-01',
-        model, 1000, 1000, 3, True)
+        model, 1000, 1000, 'val_loss', 3, verbose=True)
 
     predictor.save('models/temp_reg')

@@ -30,11 +30,12 @@ class DataPredictor:
         return results
 
     def learn(self, train_histories, test_histories, data_extractor,
-              batch_size, epochs, patience, verbose, debug):
+              batch_size, epochs, monitor, patience, verbose, debug):
         train_features, train_labels, train_dataset, train_size = self.__create_dataset(train_histories, data_extractor)
         test_features, test_labels, test_dataset, test_size = self.__create_dataset(test_histories, data_extractor)
 
-        self.__fit_model(train_dataset, train_size, test_dataset, test_size, batch_size, epochs, patience, verbose)
+        self.__fit_model(train_dataset, train_size, test_dataset, test_size,
+                         batch_size, epochs, monitor, patience, verbose)
 
         if debug:
             train_results = self.__invoke_model(train_dataset, train_size)
@@ -50,13 +51,14 @@ class DataPredictor:
         size = sum([len(h) for h in histories])
         return features, labels, dataset, size
 
-    def __fit_model(self, train_dataset, train_size, test_dataset, test_size, batch_size, epochs, patience, verbose):
+    def __fit_model(self, train_dataset, train_size, test_dataset, test_size,
+                    batch_size, epochs, monitor, patience, verbose):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         log_dir = "logs/fit/" + timestamp
         tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-        early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience)
+        early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor=monitor, patience=patience)
 
         train_dataset = train_dataset.shuffle(train_size, reshuffle_each_iteration=False).batch(batch_size)
         test_dataset = test_dataset.shuffle(test_size, reshuffle_each_iteration=False).batch(batch_size)
