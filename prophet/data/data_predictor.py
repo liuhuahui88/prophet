@@ -29,17 +29,19 @@ class DataPredictor:
 
         return results
 
-    def learn(self, train_histories, test_histories, data_extractor, batch_size, epochs, patience, verbose=False):
+    def learn(self, train_histories, test_histories, data_extractor,
+              batch_size, epochs, patience, verbose, debug):
         train_features, train_labels, train_dataset, train_size = self.__create_dataset(train_histories, data_extractor)
         test_features, test_labels, test_dataset, test_size = self.__create_dataset(test_histories, data_extractor)
 
         self.__fit_model(train_dataset, train_size, test_dataset, test_size, batch_size, epochs, patience, verbose)
 
-        train_results = self.__invoke_model(train_dataset, train_size)
-        test_results = self.__invoke_model(test_dataset, test_size)
+        if debug:
+            train_results = self.__invoke_model(train_dataset, train_size)
+            test_results = self.__invoke_model(test_dataset, test_size)
 
-        self.__save_sample(train_features, train_labels, train_results, 'train')
-        self.__save_sample(test_features, test_labels, test_results, 'test')
+            self.__save_sample(train_features, train_labels, train_results, 'train')
+            self.__save_sample(test_features, test_labels, test_results, 'test')
 
     def __create_dataset(self, histories, data_extractor):
         features = data_extractor.extract_and_concat(histories, self.model.input_names)

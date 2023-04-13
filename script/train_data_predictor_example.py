@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     predictor = play_ground.train_predictor(
         symbols, '2010-01-01', '2010-12-01', '2011-01-01',
-        model, 10000, 200, 200, False)
+        model, 10000, 200, 200)
 
     predictor.save('models/example')
 
