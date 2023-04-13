@@ -48,7 +48,7 @@ if __name__ == '__main__':
     x = tf.keras.layers.Concatenate()(inputs + t_inputs)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
-    x = tf.keras.layers.Dense(1, activation='linear', name='next_direction')(x)
+    x = tf.keras.layers.Dense(1, activation='linear', name='next_inc')(x)
 
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
