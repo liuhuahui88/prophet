@@ -52,8 +52,7 @@ if __name__ == '__main__':
 
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
-    model.compile(optimizer='adam', loss='mse',
-                  metrics=[Metric.r2, Metric.create_hard_advt(play_ground.log_friction)])
+    model.compile(optimizer='adam', loss='mse', metrics=[Metric.me, Metric.r2])
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 

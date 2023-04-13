@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-from prophet.utils.metric import Metric
 from prophet.utils.play_ground import PlayGround
 
 if __name__ == '__main__':
@@ -53,7 +52,7 @@ if __name__ == '__main__':
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
     model.compile(optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                  metrics=['AUC', Metric.create_hard_advt(play_ground.log_friction)])
+                  metrics=['Accuracy', 'AUC'])
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 
