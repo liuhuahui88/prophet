@@ -35,6 +35,18 @@ class Rank(Aggregator):
         return data.rank(pct=True)
 
 
+class Max(Aggregator):
+
+    def aggregate(self, data):
+        return data.max()
+
+
+class Min(Aggregator):
+
+    def aggregate(self, data):
+        return data.min()
+
+
 class Mean(Aggregator):
 
     def aggregate(self, data):
