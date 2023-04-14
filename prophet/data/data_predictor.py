@@ -60,8 +60,8 @@ class DataPredictor:
 
         early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor=monitor, patience=patience)
 
-        train_dataset = train_dataset.shuffle(train_size, reshuffle_each_iteration=False).batch(batch_size)
-        test_dataset = test_dataset.shuffle(test_size, reshuffle_each_iteration=False).batch(batch_size)
+        train_dataset = train_dataset.shuffle(train_size, reshuffle_each_iteration=True).batch(batch_size)
+        test_dataset = test_dataset.shuffle(test_size, reshuffle_each_iteration=True).batch(batch_size)
 
         self.model.fit(train_dataset, epochs=epochs, validation_data=test_dataset, verbose=verbose,
                        callbacks=[tensor_board_callback, early_stopping_callback])
