@@ -2,7 +2,7 @@ import pandas as pd
 
 from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank
 from prophet.fg.function.commons import Get, Merge
-from prophet.fg.function.math import Clip, Positive, Log, Indicator
+from prophet.fg.function.math import Clip, Log, Indicator
 from prophet.fg.function.oracle import Oracle
 from prophet.fg.function.series import Shift, Diff, Flip, Keep
 from prophet.utils.graph import Graph
@@ -75,7 +75,7 @@ class DataExtractor:
         graph.register('next_log_gain', Shift(-1), ['log_gain'])
         graph.register('next_clipped_log_gain', Clip(-0.08, 0.08), ['next_log_gain'])
 
-        graph.register('next_inc', Positive(), ['next_log_gain'])
+        graph.register('next_inc', Indicator(lambda n: n > 0), ['next_log_gain'])
         graph.register('next_significant_inc', Indicator(lambda n: n > 0.01), ['next_log_gain'])
 
         graph.register('oracle', Oracle(commission_rate), ['price'])
