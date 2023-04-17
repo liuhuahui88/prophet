@@ -52,7 +52,7 @@ if __name__ == '__main__':
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
     model.compile(optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                  metrics=['Accuracy', 'AUC'])
+                  metrics=['Accuracy', tf.keras.metrics.AUC(from_logits=True)])
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 
