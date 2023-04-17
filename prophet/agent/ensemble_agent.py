@@ -7,13 +7,20 @@ class EnsembleAgent(Agent):
         self.agents = agents
 
     def handle(self, ctx: Agent.Context):
-        best_score = -float('inf')
         best_symbol = None
+        best_score = -float('inf')
+
         for agent in self.agents:
             score = agent.predict(ctx)
+            if score is None:
+                continue
+
             if score > best_score:
-                best_score = score
                 best_symbol = agent.symbol
+                best_score = score
+
+        if best_symbol is None:
+            return
 
         volumes = ctx.get_volumes()
         for s in volumes:

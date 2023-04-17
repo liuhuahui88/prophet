@@ -20,6 +20,9 @@ class SmartAgent(Agent):
     def handle(self, ctx: Agent.Context):
         score = self.predict(ctx)
 
+        if score is None:
+            return
+
         action = Const.BID if score > 0 else Const.ASK
 
         if action == Const.ASK:
@@ -28,6 +31,9 @@ class SmartAgent(Agent):
             ctx.bid(self.symbol)
 
     def predict(self, ctx: Agent.Context):
+        if ctx.get_date() not in self.cache:
+            return None
+
         score = self.cache[ctx.get_date()]
 
         if ctx.get_account().get_volume(self.symbol) != 0:
