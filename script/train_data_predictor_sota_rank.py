@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
-    model.compile(optimizer='adam', loss=Metric.rank, metrics=[Metric.me, Metric.rank])
+    model.compile(optimizer='adam', loss=Metric.soft_rank, metrics=[Metric.me, Metric.hard_rank])
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 
