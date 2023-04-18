@@ -4,6 +4,12 @@ import tensorflow as tf
 class Metric:
 
     @staticmethod
+    def rank(y_true, y_pred):
+        y_true_res_mat = tf.reshape(y_true, [-1, 1]) - tf.reshape(y_true, [1, -1])
+        y_pred_res_mat = tf.reshape(y_pred, [-1, 1]) - tf.reshape(y_pred, [1, -1])
+        return 1 - tf.reduce_mean(tf.sigmoid(y_true_res_mat * y_pred_res_mat))
+
+    @staticmethod
     def me(y_true, y_pred):
         return tf.reduce_mean(y_pred - y_true)
 
