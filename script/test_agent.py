@@ -1,3 +1,4 @@
+from prophet.agent.baseline_agent import BaselineAgent
 from prophet.agent.moving_average_agent import MovingAverageAgent
 from prophet.agent.naive_agent import NaiveAgent
 from prophet.agent.oracle_agent import OracleAgent
@@ -17,6 +18,7 @@ if __name__ == '__main__':
     bt.register('B&H', NaiveAgent(symbol))
     bt.register('B&S', NaiveAgent(symbol, False, True))
     bt.register('S&B', NaiveAgent(symbol, True, True))
+    bt.register('BASE', BaselineAgent())
     bt.register('MAA', MovingAverageAgent(symbol, 5, 10))
     bt.register('ORA', OracleAgent(symbol, storage, extractor))
 

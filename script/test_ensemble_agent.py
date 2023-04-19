@@ -18,6 +18,6 @@ if __name__ == '__main__':
 
     result = play_ground.test_ensemble_agent(
         symbols, '2022-01-01', '2023-01-01',
-        predictors, delta_free_list)
+        predictors, delta_free_list, with_baseline=True)
     result.print()
     result.plot()

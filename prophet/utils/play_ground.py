@@ -1,7 +1,7 @@
 import numpy as np
 
+from prophet.agent.baseline_agent import BaselineAgent
 from prophet.agent.ensemble_agent import EnsembleAgent
-from prophet.agent.naive_agent import NaiveAgent
 from prophet.agent.oracle_agent import OracleAgent
 from prophet.agent.smart_agent import SmartAgent
 from prophet.bt.back_tester import BackTester
@@ -41,7 +41,7 @@ class PlayGround:
             bt.register('SMT_' + name, SmartAgent(symbol, self.storage, self.extractor, predictor, delta))
 
         if with_baseline:
-            bt.register('B&H', NaiveAgent(symbol))
+            bt.register('BASE', BaselineAgent())
         if with_oracle:
             bt.register('ORA', OracleAgent(symbol, self.storage, self.extractor))
 
@@ -58,10 +58,9 @@ class PlayGround:
             delta = 0 if delta_free_list is not None and name in delta_free_list else self.log_friction
             agents = [SmartAgent(s, self.storage, self.extractor, predictor, delta) for s in symbols]
             bt.register('ENS_' + name, EnsembleAgent(agents))
-
+        if with_baseline:
+            bt.register('BASE', BaselineAgent())
         for symbol in symbols:
-            if with_baseline:
-                bt.register('B&H_' + symbol, NaiveAgent(symbol))
             if with_oracle:
                 bt.register('ORA_' + symbol, OracleAgent(symbol, self.storage, self.extractor))
 
