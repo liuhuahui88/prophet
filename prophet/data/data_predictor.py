@@ -29,10 +29,16 @@ class DataPredictor:
 
         return results
 
-    def learn(self, train_histories, test_histories, data_extractor,
+    def learn(self, histories, train_end_date, data_extractor,
               batch_size, epochs, monitor, patience, verbose, debug):
-        train_features, train_labels, train_dataset, train_size = self.__create_dataset(train_histories, data_extractor)
-        test_features, test_labels, test_dataset, test_size = self.__create_dataset(test_histories, data_extractor)
+        features = data_extractor.extract_and_concat(histories, self.model.input_names)
+        labels = data_extractor.extract_and_concat(histories, self.model.output_names)
+        dates = data_extractor.extract_and_concat(histories, ['date'])['date']['Date']
+
+        train_features, train_labels, train_dataset, train_size =\
+            self.__create_dataset(features, labels, dates, lambda d: d <= train_end_date)
+        test_features, test_labels, test_dataset, test_size =\
+            self.__create_dataset(features, labels, dates, lambda d: d > train_end_date)
 
         self.__fit_model(train_dataset, train_size, test_dataset, test_size,
                          batch_size, epochs, monitor, patience, verbose)
@@ -44,11 +50,11 @@ class DataPredictor:
             self.__save_sample(train_features, train_labels, train_results, 'train')
             self.__save_sample(test_features, test_labels, test_results, 'test')
 
-    def __create_dataset(self, histories, data_extractor):
-        features = data_extractor.extract_and_concat(histories, self.model.input_names)
-        labels = data_extractor.extract_and_concat(histories, self.model.output_names)
+    def __create_dataset(self, features, labels, dates, date_cond):
+        features = {k: v[dates.apply(date_cond)] for k, v in features.items()}
+        labels = {k: v[dates.apply(date_cond)] for k, v in labels.items()}
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
-        size = sum([len(h) for h in histories])
+        size = len(dates)
         return features, labels, dataset, size
 
     def __fit_model(self, train_dataset, train_size, test_dataset, test_size,

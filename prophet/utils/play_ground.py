@@ -23,11 +23,10 @@ class PlayGround:
 
     def train_predictor(self, symbols, start_date, train_end_date, test_end_date,
                         model, batch_size, epochs, monitor, patience, verbose=False, debug=False):
-        train_histories = self.storage.load_histories(symbols, start_date, train_end_date)
-        test_histories = self.storage.load_histories(symbols, train_end_date, test_end_date)
+        histories = self.storage.load_histories(symbols, start_date, test_end_date)
 
         predictor = DataPredictor(model)
-        predictor.learn(train_histories, test_histories, self.extractor,
+        predictor.learn(histories, train_end_date, self.extractor,
                         batch_size, epochs, monitor, patience, verbose, debug)
 
         return predictor
