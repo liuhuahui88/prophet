@@ -1,6 +1,6 @@
 import pandas as pd
 
-from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank
+from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank, Min, Max
 from prophet.fg.function.commons import Get, Merge
 from prophet.fg.function.math import Clip, Log, Indicator
 from prophet.fg.function.oracle import Oracle
@@ -36,34 +36,19 @@ class DataExtractor:
         graph.register('log_volume', Log(), ['volume'])
 
         graph.register('log_volume_rank', Rank(20), ['log_volume'])
-        graph.register('log_volume_rank_mean', Mean(5), ['log_volume_rank'])
-        graph.register('log_volume_rank_std', Std(5), ['log_volume_rank'])
-        graph.register('log_volume_rank_skew', Skew(5), ['log_volume_rank'])
-        graph.register('log_volume_rank_kurt', Kurt(5), ['log_volume_rank'])
+        DataExtractor.register_statistics(graph, 'log_volume_rank', 5)
 
         graph.register('log_gain', Diff(1), ['log_price'])
-        graph.register('log_gain_mean', Mean(20), ['log_gain'])
-        graph.register('log_gain_std', Std(20), ['log_gain'])
-        graph.register('log_gain_skew', Skew(20), ['log_gain'])
-        graph.register('log_gain_kurt', Kurt(20), ['log_gain'])
+        DataExtractor.register_statistics(graph, 'log_gain', 20)
 
         graph.register('log_price_rank', Rank(20), ['log_price'])
-        graph.register('log_price_rank_mean', Mean(5), ['log_price_rank'])
-        graph.register('log_price_rank_std', Std(5), ['log_price_rank'])
-        graph.register('log_price_rank_skew', Skew(5), ['log_price_rank'])
-        graph.register('log_price_rank_kurt', Kurt(5), ['log_price_rank'])
+        DataExtractor.register_statistics(graph, 'log_price_rank', 5)
 
         graph.register('log_price_rank_diff', Diff(1), ['log_price_rank'])
-        graph.register('log_price_rank_diff_mean', Mean(5), ['log_price_rank_diff'])
-        graph.register('log_price_rank_diff_std', Std(5), ['log_price_rank_diff'])
-        graph.register('log_price_rank_diff_skew', Skew(5), ['log_price_rank_diff'])
-        graph.register('log_price_rank_diff_kurt', Kurt(5), ['log_price_rank_diff'])
+        DataExtractor.register_statistics(graph, 'log_price_rank_diff', 5)
 
         graph.register('log_price_rank_diff_diff', Diff(1), ['log_price_rank_diff'])
-        graph.register('log_price_rank_diff_diff_mean', Mean(5), ['log_price_rank_diff_diff'])
-        graph.register('log_price_rank_diff_diff_std', Std(5), ['log_price_rank_diff_diff'])
-        graph.register('log_price_rank_diff_diff_skew', Skew(5), ['log_price_rank_diff_diff'])
-        graph.register('log_price_rank_diff_diff_kurt', Kurt(5), ['log_price_rank_diff_diff'])
+        DataExtractor.register_statistics(graph, 'log_price_rank_diff_diff', 5)
 
         graph.register('keep_lose', Keep(lambda n: n < 0), ['log_gain'])
         graph.register('keep_gain', Keep(lambda n: n > 0), ['log_gain'])
@@ -83,3 +68,12 @@ class DataExtractor:
         graph.register('oracle_full_advantage', Get('FullAdvantage', 'Advantage'), ['oracle'])
 
         return graph
+
+    @staticmethod
+    def register_statistics(graph, dependent_name, window):
+        graph.register(dependent_name + '_mean', Mean(window), [dependent_name])
+        graph.register(dependent_name + '_std', Std(window), [dependent_name])
+        graph.register(dependent_name + '_skew', Skew(window), [dependent_name])
+        graph.register(dependent_name + '_kurt', Kurt(window), [dependent_name])
+        graph.register(dependent_name + '_min', Min(window), [dependent_name])
+        graph.register(dependent_name + '_max', Max(window), [dependent_name])
