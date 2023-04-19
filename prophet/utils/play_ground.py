@@ -26,7 +26,7 @@ class PlayGround:
         histories = self.storage.load_histories(symbols, start_date, test_end_date)
 
         predictor = DataPredictor(model)
-        predictor.learn(histories, train_end_date, self.extractor,
+        predictor.learn(symbols, histories, train_end_date, self.extractor,
                         batch_size, epochs, monitor, patience, verbose, debug)
 
         return predictor
