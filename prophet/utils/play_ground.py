@@ -50,14 +50,14 @@ class PlayGround:
         return result
 
     def test_ensemble_agent(self, symbols, start_date, end_date,
-                            predictors, delta_free_list=None,
+                            predictors, delta_free_list=None, top_k=1,
                             with_baseline=False, with_oracle=False):
         bt = BackTester(self.storage, Broker(self.commission_rate))
 
         for name, predictor in predictors.items():
             delta = 0 if delta_free_list is not None and name in delta_free_list else self.log_friction
             agents = [SmartAgent(s, self.storage, self.extractor, predictor, delta) for s in symbols]
-            bt.register('ENS_' + name, EnsembleAgent(agents))
+            bt.register('ENS_' + name, EnsembleAgent(agents, top_k))
         if with_baseline:
             bt.register('BASE', BaselineAgent())
         for symbol in symbols:

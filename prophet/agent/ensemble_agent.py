@@ -3,31 +3,33 @@ from prophet.agent.abstract_agent import Agent
 
 class EnsembleAgent(Agent):
 
-    def __init__(self, agents):
+    def __init__(self, agents, top_k):
         self.agents = agents
+        self.top_k = top_k
 
     def handle(self, ctx: Agent.Context):
-        best_symbol = None
-        best_score = -float('inf')
+        symbols, num_symbols = self.select_symbols(ctx)
 
-        for agent in self.agents:
-            score = agent.predict(ctx)
-            if score is None:
-                continue
+        for symbol in ctx.get_prices().keys():
+            ctx.ask(symbol)
 
-            if score > best_score:
-                best_symbol = agent.symbol
-                best_score = score
-
-        if best_symbol is None:
+        if num_symbols == 0:
             return
 
-        volumes = ctx.get_volumes()
-        for s in volumes:
-            if s != best_symbol:
-                ctx.ask(s)
+        cash = ctx.get_account().get_cash()
+        for symbol in symbols:
+            ctx.bid(symbol, int(cash / num_symbols))
 
-        if best_score > 0:
-            ctx.bid(best_symbol)
-        else:
-            ctx.ask(best_symbol)
+    def select_symbols(self, ctx: Agent.Context):
+        records = {agent.symbol: agent.predict(ctx) for agent in self.agents}
+        records = {k: v for k, v in records.items() if v is not None and v > 0}
+
+        symbols = list(records.keys())
+        scores = list(records.values())
+
+        indexes = sorted(range(len(symbols)), key=lambda i: scores[i], reverse=True)
+
+        num_best_symbols = min(self.top_k, len(symbols))
+        best_symbols = [symbols[indexes[i]] for i in range(num_best_symbols)]
+
+        return best_symbols, num_best_symbols
