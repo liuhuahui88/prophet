@@ -11,11 +11,11 @@ if __name__ == '__main__':
         commission_rate=0.0)
 
     inputs = [
-        # tf.keras.layers.Input(name='log_gain', shape=(1,)),
-        tf.keras.layers.Input(name='log_gain_mean', shape=(1,)),
-        tf.keras.layers.Input(name='log_gain_std', shape=(1,)),
-        tf.keras.layers.Input(name='log_gain_skew', shape=(1,)),
-        tf.keras.layers.Input(name='log_gain_kurt', shape=(1,)),
+        # tf.keras.layers.Input(name='log_price_diff', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_mean', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_std', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_skew', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_kurt', shape=(1,)),
 
         tf.keras.layers.Input(name='log_price_rank', shape=(1,)),
         tf.keras.layers.Input(name='log_price_rank_mean', shape=(1,)),
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     x = tf.keras.layers.Concatenate()(inputs + t_inputs)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
     x = tf.keras.layers.Dense(256, activation='relu')(x)
-    x = tf.keras.layers.Dense(1, activation='linear', kernel_initializer='zeros', name='next_log_gain')(x)
+    x = tf.keras.layers.Dense(1, activation='linear', kernel_initializer='zeros', name='next_log_price_diff')(x)
 
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
