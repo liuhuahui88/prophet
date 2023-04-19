@@ -31,14 +31,14 @@ class DataPredictor:
 
     def learn(self, histories, train_end_date, data_extractor,
               batch_size, epochs, monitor, patience, verbose, debug):
+        dates = data_extractor.extract_and_concat(histories, ['date'])['date']['Date']
         features = data_extractor.extract_and_concat(histories, self.model.input_names)
         labels = data_extractor.extract_and_concat(histories, self.model.output_names)
-        dates = data_extractor.extract_and_concat(histories, ['date'])['date']['Date']
 
-        train_features, train_labels, train_dataset, train_size =\
-            self.__create_dataset(features, labels, dates, lambda d: d <= train_end_date)
-        test_features, test_labels, test_dataset, test_size =\
-            self.__create_dataset(features, labels, dates, lambda d: d > train_end_date)
+        train_dates, train_features, train_labels, train_dataset, train_size =\
+            self.__create_dataset(dates, features, labels, dates.apply(lambda d: d <= train_end_date))
+        test_dates, test_features, test_labels, test_dataset, test_size =\
+            self.__create_dataset(dates, features, labels, dates.apply(lambda d: d > train_end_date))
 
         self.__fit_model(train_dataset, train_size, test_dataset, test_size,
                          batch_size, epochs, monitor, patience, verbose)
@@ -47,15 +47,16 @@ class DataPredictor:
             train_results = self.__invoke_model(train_dataset, train_size)
             test_results = self.__invoke_model(test_dataset, test_size)
 
-            self.__save_sample(train_features, train_labels, train_results, 'train')
-            self.__save_sample(test_features, test_labels, test_results, 'test')
+            self.__save_sample(train_dates, train_features, train_labels, train_results, 'train')
+            self.__save_sample(test_dates, test_features, test_labels, test_results, 'test')
 
-    def __create_dataset(self, features, labels, dates, date_cond):
-        features = {k: v[dates.apply(date_cond)] for k, v in features.items()}
-        labels = {k: v[dates.apply(date_cond)] for k, v in labels.items()}
+    def __create_dataset(self, dates, features, labels, condition):
+        dates = dates[condition]
+        features = {k: v[condition] for k, v in features.items()}
+        labels = {k: v[condition] for k, v in labels.items()}
         dataset = tf.data.Dataset.from_tensor_slices((features, labels))
         size = len(dates)
-        return features, labels, dataset, size
+        return dates, features, labels, dataset, size
 
     def __fit_model(self, train_dataset, train_size, test_dataset, test_size,
                     batch_size, epochs, monitor, patience, verbose):
@@ -85,7 +86,7 @@ class DataPredictor:
 
         return results
 
-    def __save_sample(self, features, labels, results, prefix):
-        values = list(features.values()) + list(labels.values()) + list(results.values())
+    def __save_sample(self, dates, features, labels, results, prefix):
+        values = [dates] + list(features.values()) + list(labels.values()) + list(results.values())
         samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
         samples.to_csv('csvs/{}_samples.csv'.format(prefix), index=False)
