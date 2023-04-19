@@ -27,6 +27,7 @@ class DataExtractor:
 
         graph.register('history')
 
+        graph.register('date', Get('Date'), ['history'])
         graph.register('price', Get('Close', 'Price'), ['history'])
         graph.register('volume', Get('Volume'), ['history'])
 
