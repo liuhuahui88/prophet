@@ -73,7 +73,7 @@ class DataExtractor:
 
     @staticmethod
     def register_labels(graph, commission_rate):
-        graph.register('next_log_price_diff', Shift(-1), ['log_price_diff'])
+        graph.register('next_log_price_diff', Diff(1, future=True), ['log_price'])
         graph.register('next_clipped_log_price_diff', Clip(-0.08, 0.08), ['next_log_price_diff'])
 
         graph.register('next_inc', Indicator(lambda n: n > 0), ['next_log_price_diff'])
