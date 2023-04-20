@@ -9,12 +9,12 @@ if __name__ == '__main__':
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300010')
     predictors = {
-        'EXP_REG': DataPredictor.load('models/exp_reg'),
-        'EXP_CLS': DataPredictor.load('models/exp_cls'),
+        'TEMP': DataPredictor.load('models/temp'),
+        'SOTA_RANK': DataPredictor.load('models/sota_rank'),
         'SOTA_REG': DataPredictor.load('models/sota_reg'),
         'SOTA_CLS': DataPredictor.load('models/sota_cls'),
     }
-    delta_free_list = ['EXP_REG', 'EXP_CLS', 'SOTA_REG', 'SOTA_CLS']
+    delta_free_list = ['SOTA_RANK', 'SOTA_REG', 'SOTA_CLS']
 
     for symbol in symbols:
         result = play_ground.test_smart_agent(
