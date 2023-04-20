@@ -48,6 +48,42 @@ class Keep(Graph.Function):
         return df
 
 
+class Ordered(Graph.Function):
+
+    def __init__(self, window):
+        self.window = window
+
+    def compute(self, inputs):
+        line = inputs[0].iloc[:, 0].tolist()
+
+        z_reversed = 0
+        result = []
+        for i in range(len(line)):
+            window = min(self.window, i + 1)
+
+            if window <= 1:
+                result.append(0.5)
+                continue
+
+            prefix = line[i - window] if i - window >= 0 else -float('inf')
+            suffix = line[i]
+            for j in range(i - window + 1, i):
+                if prefix == line[j]:
+                    z_reversed -= 0.5
+                elif prefix > line[j]:
+                    z_reversed -= 1
+
+                if line[j] == suffix:
+                    z_reversed += 0.5
+                elif line[j] > suffix:
+                    z_reversed += 1
+
+            result.append(1 - z_reversed * 2 / (window * (window - 1)))
+
+        df = pd.DataFrame({'Ordered': result})
+        return df
+
+
 class Flip(Graph.Function):
 
     def compute(self, inputs):
