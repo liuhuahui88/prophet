@@ -22,7 +22,7 @@ class EnsembleAgent(Agent):
 
     def select_symbols(self, ctx: Agent.Context):
         records = {agent.symbol: agent.predict(ctx) for agent in self.agents}
-        records = {k: v for k, v in records.items() if v is not None and v > 0}
+        records = {k: v for k, v in records.items() if v is not None}
 
         symbols = list(records.keys())
         scores = list(records.values())

@@ -4,7 +4,7 @@ from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank, Min, Max
 from prophet.fg.function.commons import Get, Merge
 from prophet.fg.function.math import Clip, Log, Indicator
 from prophet.fg.function.oracle import Oracle
-from prophet.fg.function.series import Shift, Diff, Keep
+from prophet.fg.function.series import Shift, Diff, Keep, Ordered
 from prophet.utils.graph import Graph
 
 
@@ -26,25 +26,19 @@ class DataExtractor:
         graph = Graph()
 
         DataExtractor.register_raw_features(graph)
-        DataExtractor.register_example_features(graph)
-        DataExtractor.register_legacy_features(graph)
+
+        graph.register('log_price', Log(), ['price'])
+        DataExtractor.register_statistics(graph, 'log_price', 10)
+        DataExtractor.register_rank_and_ordered(graph, 'log_price', 10, 3)
 
         graph.register('log_price_diff', Diff(1), ['log_price'])
-        graph.register('log_price_rank', Rank(20), ['log_price'])
-        graph.register('log_price_diff_rank', Rank(20), ['log_price_diff'])
-        graph.register('log_price_rank_diff', Diff(1), ['log_price_rank'])
-        graph.register('log_price_rank_diff_rank', Rank(5), ['log_price_rank_diff'])
-        graph.register('log_price_rank_diff_diff', Diff(1), ['log_price_rank_diff'])
-
-        DataExtractor.register_statistics(graph, 'log_price_diff', 20)
-        DataExtractor.register_statistics(graph, 'log_price_rank', 5)
-        DataExtractor.register_statistics(graph, 'log_price_diff_rank', 5)
-        DataExtractor.register_statistics(graph, 'log_price_rank_diff', 5)
-        DataExtractor.register_statistics(graph, 'log_price_rank_diff_rank', 5)
-        DataExtractor.register_statistics(graph, 'log_price_rank_diff_diff', 5)
+        DataExtractor.register_statistics(graph, 'log_price_diff', 10)
+        DataExtractor.register_rank_and_ordered(graph, 'log_price_diff', 10, 3)
 
         graph.register('keep_lose', Keep(lambda n: n < 0), ['log_price_diff'])
         graph.register('keep_gain', Keep(lambda n: n > 0), ['log_price_diff'])
+
+        DataExtractor.register_example_features(graph)
 
         DataExtractor.register_labels(graph, commission_rate)
 
@@ -59,17 +53,9 @@ class DataExtractor:
         graph.register('price', Get('Close', 'Price'), ['history'])
         graph.register('volume', Get('Volume'), ['history'])
 
-        graph.register('log_price', Log(), ['price'])
-        graph.register('log_volume', Log(), ['volume'])
-
     @staticmethod
     def register_example_features(graph):
         graph.register('prices', Merge([Shift(i) for i in range(0, 30)]), ['price'])
-
-    @staticmethod
-    def register_legacy_features(graph):
-        graph.register('log_gain', Diff(1), ['log_price'])
-        DataExtractor.register_statistics(graph, 'log_gain', 20)
 
     @staticmethod
     def register_labels(graph, commission_rate):
@@ -91,3 +77,13 @@ class DataExtractor:
         graph.register(dependent_name + '_kurt', Kurt(window), [dependent_name])
         graph.register(dependent_name + '_min', Min(window), [dependent_name])
         graph.register(dependent_name + '_max', Max(window), [dependent_name])
+
+    @staticmethod
+    def register_rank_and_ordered(graph, dependent_name, window, order):
+        graph.register(dependent_name + '_rank', Rank(window), [dependent_name])
+
+        prefix = dependent_name + '_ord'
+        for i in range(order):
+            name = prefix + str(i + 1)
+            graph.register(name, Ordered(window), [dependent_name])
+            dependent_name = name

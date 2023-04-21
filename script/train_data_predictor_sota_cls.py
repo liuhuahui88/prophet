@@ -10,48 +10,32 @@ if __name__ == '__main__':
         commission_rate=0.0)
 
     inputs = [
-        # tf.keras.layers.Input(name='log_price_diff', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_diff_mean', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_diff_std', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_diff_skew', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_diff_kurt', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_rank', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_ord1', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_ord2', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_diff_ord3', shape=(1,)),
 
         tf.keras.layers.Input(name='log_price_rank', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_mean', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_std', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_skew', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_kurt', shape=(1,)),
-
-        tf.keras.layers.Input(name='log_price_rank_diff', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_mean', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_std', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_skew', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_kurt', shape=(1,)),
-
-        tf.keras.layers.Input(name='log_price_rank_diff_diff', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_diff_mean', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_diff_std', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_diff_skew', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_rank_diff_diff_kurt', shape=(1,)),
-
-        tf.keras.layers.Input(name='keep_lose', shape=(1,)),
-        tf.keras.layers.Input(name='keep_gain', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_ord1', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_ord2', shape=(1,)),
+        tf.keras.layers.Input(name='log_price_ord3', shape=(1,)),
     ]
 
-    t_inputs = []
-    for inpt in inputs:
-        inpt = tf.keras.layers.Dense(16, activation='relu')(inpt)
-        inpt = tf.keras.layers.Dense(16, activation='relu')(inpt)
-        t_inputs.append(inpt)
+    dropout_inputs = [tf.keras.layers.Dropout(0.2)(node) for node in inputs]
 
-    x = tf.keras.layers.Concatenate()(inputs + t_inputs)
-    x = tf.keras.layers.Dense(256, activation='relu')(x)
-    x = tf.keras.layers.Dense(256, activation='relu')(x)
-    x = tf.keras.layers.Dense(1, activation='linear', name='next_inc')(x)
+    embedding_inputs = []
+    for node in dropout_inputs:
+        node = tf.keras.layers.Dense(16, activation='relu')(node)
+        node = tf.keras.layers.Dense(16, activation='relu')(node)
+        embedding_inputs.append(node)
+
+    x = tf.keras.layers.Concatenate()(dropout_inputs + embedding_inputs)
+    x = tf.keras.layers.Dense(1, activity_regularizer='l2', name='next_inc')(x)
 
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
-    model.compile(optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
                   metrics=['Accuracy', tf.keras.metrics.AUC(from_logits=True)])
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
