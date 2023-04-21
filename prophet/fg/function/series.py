@@ -27,6 +27,28 @@ class Diff(Graph.Function):
             return (input_df - input_df.shift(self.distance)).fillna(0)
 
 
+class Satisfy(Graph.Function):
+
+    def __init__(self, cond, window):
+        self.cond = cond
+        self.window = window
+
+    def compute(self, inputs):
+        line = inputs[0].iloc[:, 0].tolist()
+
+        cnt = 0
+        result = []
+        for i in range(len(line)):
+            if i - self.window >= 0 and self.cond(line[i - self.window]):
+                cnt -= 1
+            if self.cond(line[i]):
+                cnt += 1
+            result.append(cnt / min(i + 1, self.window))
+
+        df = pd.DataFrame({'Satisfy': result})
+        return df
+
+
 class Keep(Graph.Function):
 
     def __init__(self, cond):

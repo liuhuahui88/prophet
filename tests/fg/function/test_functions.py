@@ -6,7 +6,7 @@ import pandas as pd
 from prophet.fg.function.aggregator import Aggregator
 from prophet.fg.function.commons import Get, Fill, Merge
 from prophet.fg.function.math import Log, Sign
-from prophet.fg.function.series import Shift, Diff, Keep, Flip, Ordered
+from prophet.fg.function.series import Shift, Diff, Keep, Flip, Ordered, Satisfy
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 
@@ -71,6 +71,13 @@ class TestFeatureGeneration(TestCase):
         merge = Merge([get_n, get_m])
 
         self.assert_df_equal(merge.compute([x]), x)
+
+    def test_satisfy(self):
+        x = pd.DataFrame({'n': [-1, 1, 1, 1, -1, -1, 1]})
+
+        actual = Satisfy(lambda z: z < 0, 2).compute([x])
+        expected = pd.DataFrame({'Satisfy': [1, 0.5, 0, 0, 0.5, 1, 0.5]})
+        self.assert_df_equal(actual, expected)
 
     def test_keep(self):
         x = pd.DataFrame({'n': [-1, 1, 1, 1, -1, -1, 1]})
