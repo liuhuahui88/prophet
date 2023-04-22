@@ -6,7 +6,7 @@ import pandas as pd
 from prophet.fg.function.aggregator import Aggregator
 from prophet.fg.function.commons import Get, Fill, Merge
 from prophet.fg.function.math import Log, Sign
-from prophet.fg.function.series import Shift, Diff, Keep, Flip, Ordered, Satisfy
+from prophet.fg.function.series import Shift, Diff, Keep, Flip, Ordered, Satisfy, RRank
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 
@@ -91,6 +91,13 @@ class TestFeatureGeneration(TestCase):
 
         actual = Ordered(2).compute([x])
         expected = pd.DataFrame({'Ordered': [0.5, 1, 0.5, 0.5, 0, 0.5, 1]})
+        self.assert_df_equal(actual, expected)
+
+    def test_rrank(self):
+        x = pd.DataFrame({'n': [-1, 1, 1, 1, -1, -1, 1]})
+
+        actual = RRank(2).compute([x])
+        expected = pd.DataFrame({'RRank': [0.5, 1, 0.5, 0.5, 0, 0.5, 1]})
         self.assert_df_equal(actual, expected)
 
     def test_flip(self):

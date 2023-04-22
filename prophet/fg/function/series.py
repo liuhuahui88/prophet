@@ -106,6 +106,30 @@ class Ordered(Graph.Function):
         return df
 
 
+class RRank(Graph.Function):
+
+    def __init__(self, window):
+        self.window = window
+
+    def compute(self, inputs):
+        line = inputs[0].iloc[:, 0].tolist()
+
+        result = []
+        for i in range(len(line)):
+            window = min(self.window, i + 1)
+
+            sub_line = line[i + 1 - window: i + 1]
+            max_value = max(sub_line)
+            min_value = min(sub_line)
+
+            w_rank = 0.5 if max_value == min_value else (line[i] - min_value) / (max_value - min_value)
+
+            result.append(w_rank)
+
+        df = pd.DataFrame({'RRank': result})
+        return df
+
+
 class Flip(Graph.Function):
 
     def compute(self, inputs):
