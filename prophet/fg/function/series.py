@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 from prophet.utils.graph import Graph
 
@@ -86,18 +85,22 @@ class Ordered(Graph.Function):
 
             for j in range(i - window + 1, i):
                 if i - window >= 0:
-                    score, z = self.update(score, z, line[i - window], line[j], -1)
-                score, z = self.update(score, z, line[j], line[i], 1)
+                    delta = line[j] - line[i - window]
+                    reward = 1 if not self.weighted else abs(delta)
+                    is_ordered = ((0 if delta == 0 else delta / abs(delta)) + 1) / 2
+                    score -= reward * is_ordered
+                    z -= reward
+
+                delta = line[i] - line[j]
+                reward = 1 if not self.weighted else abs(delta)
+                is_ordered = ((0 if delta == 0 else delta / abs(delta)) + 1) / 2
+                score += reward * is_ordered
+                z += reward
+
             result.append(0.5 if z == 0 else score / z)
 
         df = pd.DataFrame({'Ordered': result})
         return df
-
-    def update(self, score, z, former, latter, flag):
-        delta = latter - former
-        reward = np.abs(delta) if self.weighted else 1
-        is_ordered = (np.sign(delta) + 1) / 2
-        return score + flag * reward * is_ordered, z + flag * reward
 
 
 class RRank(Graph.Function):
@@ -133,7 +136,8 @@ class Flip(Graph.Function):
         previous_state = 0
         result = []
         for i in range(len(line1)):
-            current_state = np.sign(line1[i] - line2[i])
+            delta = line1[i] - line2[i]
+            current_state = 0 if delta == 0 else delta / abs(delta)
             if current_state == 0:
                 result.append(0)
             elif previous_state == 0:
