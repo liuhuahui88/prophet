@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from prophet.utils.input_builder import InputBuilder
 from prophet.utils.play_ground import PlayGround
 
 if __name__ == '__main__':
@@ -9,17 +10,13 @@ if __name__ == '__main__':
         history_file_path='../data/history',
         commission_rate=0.0)
 
-    inputs = [
-        tf.keras.layers.Input(name='log_price_diff_rank', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_diff_ord1', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_diff_ord2', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_diff_ord3', shape=(1,)),
-
-        tf.keras.layers.Input(name='log_price_rank', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_ord1', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_ord2', shape=(1,)),
-        tf.keras.layers.Input(name='log_price_ord3', shape=(1,)),
-    ]
+    suffixes = ['rank', 'rrank', 'ord1']
+    inputs = InputBuilder()\
+        .append_all('log_price', suffixes)\
+        .append_all('log_price_diff', suffixes)\
+        .append_all('log_price_diff_diff', suffixes)\
+        .append_all('log_price_diff_diff_diff', suffixes)\
+        .build()
 
     dropout_inputs = [tf.keras.layers.Dropout(0.2)(node) for node in inputs]
 
