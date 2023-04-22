@@ -93,6 +93,12 @@ class TestFeatureGeneration(TestCase):
         expected = pd.DataFrame({'Ordered': [0.5, 1, 0.5, 0.5, 0, 0.5, 1]})
         self.assert_df_equal(actual, expected)
 
+        x = pd.DataFrame({'n': [-1, 1, 6, 5, 6, 1, -1]})
+
+        actual = Ordered(3, weighted=True).compute([x])
+        expected = pd.DataFrame({'Ordered': [0.5, 1, 1, 0.9, 0.5, 0.1, 0]})
+        self.assert_df_equal(actual, expected)
+
     def test_rrank(self):
         x = pd.DataFrame({'n': [-1, 1, 1, 1, -1, -1, 1]})
 

@@ -72,38 +72,32 @@ class Keep(Graph.Function):
 
 class Ordered(Graph.Function):
 
-    def __init__(self, window):
+    def __init__(self, window, weighted=False):
         self.window = window
+        self.weighted = weighted
 
     def compute(self, inputs):
         line = inputs[0].iloc[:, 0].tolist()
 
-        z_reversed = 0
+        score, z = 0, 0
         result = []
         for i in range(len(line)):
             window = min(self.window, i + 1)
 
-            if window <= 1:
-                result.append(0.5)
-                continue
-
-            prefix = line[i - window] if i - window >= 0 else -float('inf')
-            suffix = line[i]
             for j in range(i - window + 1, i):
-                if prefix == line[j]:
-                    z_reversed -= 0.5
-                elif prefix > line[j]:
-                    z_reversed -= 1
-
-                if line[j] == suffix:
-                    z_reversed += 0.5
-                elif line[j] > suffix:
-                    z_reversed += 1
-
-            result.append(1 - z_reversed * 2 / (window * (window - 1)))
+                if i - window >= 0:
+                    score, z = self.update(score, z, line[i - window], line[j], -1)
+                score, z = self.update(score, z, line[j], line[i], 1)
+            result.append(0.5 if z == 0 else score / z)
 
         df = pd.DataFrame({'Ordered': result})
         return df
+
+    def update(self, score, z, former, latter, flag):
+        delta = latter - former
+        reward = np.abs(delta) if self.weighted else 1
+        is_ordered = (np.sign(delta) + 1) / 2
+        return score + flag * reward * is_ordered, z + flag * reward
 
 
 class RRank(Graph.Function):
