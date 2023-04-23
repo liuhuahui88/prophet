@@ -32,14 +32,14 @@ class DataPredictor:
     def learn(self, symbols, histories, train_end_date, data_extractor,
               batch_size, epochs, monitor, patience, verbose, debug):
         syms = self.__broadcast_symbols(symbols, histories)
-        dates = data_extractor.extract_and_concat(histories, ['date'])['date']['Date']
+        dates = data_extractor.extract_and_concat(histories, ['date'])['date']
         features = data_extractor.extract_and_concat(histories, self.model.input_names)
         labels = data_extractor.extract_and_concat(histories, self.model.output_names)
 
         train_syms, train_dates, train_features, train_labels, train_dataset, train_size =\
-            self.__create_dataset(syms, dates, features, labels, dates.apply(lambda d: d <= train_end_date))
+            self.__create_dataset(syms, dates, features, labels, dates['Date'].apply(lambda d: d < train_end_date))
         test_syms, test_dates, test_features, test_labels, test_dataset, test_size =\
-            self.__create_dataset(syms, dates, features, labels, dates.apply(lambda d: d > train_end_date))
+            self.__create_dataset(syms, dates, features, labels, dates['Date'].apply(lambda d: d >= train_end_date))
 
         self.__fit_model(train_dataset, train_size, test_dataset, test_size,
                          batch_size, epochs, monitor, patience, verbose)
