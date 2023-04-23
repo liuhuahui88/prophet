@@ -82,8 +82,8 @@ class TestFeatureGeneration(TestCase):
     def test_keep(self):
         x = pd.DataFrame({'n': [-1, 1, 1, 1, -1, -1, 1]})
 
-        actual = Keep(lambda z: z < 0).compute([x])
-        expected = pd.DataFrame({'Keep': [1, 0, 0, 0, 1, 2, 0]})
+        actual = Keep(lambda z: z < 0, 2).compute([x])
+        expected = pd.DataFrame({'Keep': [1, 0, 0, 0, 0.5, 1, 0]})
         self.assert_df_equal(actual, expected)
 
     def test_ordered(self):

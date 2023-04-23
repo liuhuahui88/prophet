@@ -50,8 +50,9 @@ class Satisfy(Graph.Function):
 
 class Keep(Graph.Function):
 
-    def __init__(self, cond):
+    def __init__(self, cond, window):
         self.cond = cond
+        self.window = window
 
     def compute(self, inputs):
         line = inputs[0].iloc[:, 0].tolist()
@@ -60,10 +61,10 @@ class Keep(Graph.Function):
         result = []
         for i in range(len(line)):
             if self.cond(line[i]):
-                cnt += 1
+                cnt = min(cnt + 1, self.window)
             else:
                 cnt = 0
-            result.append(cnt)
+            result.append(cnt / min(i + 1, self.window))
 
         df = pd.DataFrame({'Keep': result})
         return df
