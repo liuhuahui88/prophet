@@ -35,6 +35,12 @@ class Rank(Aggregator):
         return data.rank(pct=True)
 
 
+class Spread(Aggregator):
+
+    def aggregate(self, data):
+        return data.max() - data.min()
+
+
 class Max(Aggregator):
 
     def aggregate(self, data):
