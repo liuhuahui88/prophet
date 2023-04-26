@@ -76,7 +76,8 @@ class DataPredictor:
         log_dir = "logs/fit/" + timestamp
         tensor_board_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-        early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor=monitor, patience=patience)
+        early_stopping_callback = tf.keras.callbacks.EarlyStopping(
+            monitor=monitor, patience=patience, restore_best_weights=True)
 
         train_dataset = train_dataset.cache().shuffle(train_size, reshuffle_each_iteration=True).batch(batch_size)
         test_dataset = test_dataset.cache().shuffle(test_size, reshuffle_each_iteration=True).batch(batch_size)
