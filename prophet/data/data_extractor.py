@@ -4,7 +4,7 @@ from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank, Min, Max
 from prophet.fg.function.commons import Get, Merge
 from prophet.fg.function.math import Clip, Log, Indicator
 from prophet.fg.function.oracle import Oracle
-from prophet.fg.function.series import Shift, Diff, Ordered, RRank, Keep
+from prophet.fg.function.series import Shift, Diff, Ordered, RRank
 from prophet.utils.graph import Graph
 
 
@@ -28,26 +28,18 @@ class DataExtractor:
         DataExtractor.register_raw_features(graph)
 
         window = 10
-        order = 3
 
         graph.register('log_price', Log(), ['price'])
         DataExtractor.register_statistics(graph, 'log_price', window)
-        DataExtractor.register_rank_and_ordered(graph, 'log_price', window, order)
 
         graph.register('log_price_diff', Diff(1), ['log_price'])
         DataExtractor.register_statistics(graph, 'log_price_diff', window)
-        DataExtractor.register_rank_and_ordered(graph, 'log_price_diff', window, order)
 
         graph.register('log_price_diff_diff', Diff(1), ['log_price_diff'])
         DataExtractor.register_statistics(graph, 'log_price_diff_diff', window)
-        DataExtractor.register_rank_and_ordered(graph, 'log_price_diff_diff', window, order)
 
         graph.register('log_price_diff_diff_diff', Diff(1), ['log_price_diff_diff'])
         DataExtractor.register_statistics(graph, 'log_price_diff_diff_diff', window)
-        DataExtractor.register_rank_and_ordered(graph, 'log_price_diff_diff_diff', window, order)
-
-        graph.register('keep_lose', Keep(lambda n: n < 0), ['log_price_diff'])
-        graph.register('keep_gain', Keep(lambda n: n > 0), ['log_price_diff'])
 
         DataExtractor.register_example_features(graph)
 
@@ -88,14 +80,6 @@ class DataExtractor:
         graph.register(dependent_name + '_kurt', Kurt(window), [dependent_name])
         graph.register(dependent_name + '_min', Min(window), [dependent_name])
         graph.register(dependent_name + '_max', Max(window), [dependent_name])
-
-    @staticmethod
-    def register_rank_and_ordered(graph, dependent_name, window, order):
         graph.register(dependent_name + '_rank', Rank(window), [dependent_name])
         graph.register(dependent_name + '_rrank', RRank(window), [dependent_name])
-
-        prefix = dependent_name + '_ord'
-        for i in range(order):
-            name = prefix + str(i + 1)
-            graph.register(name, Ordered(window), [dependent_name])
-            dependent_name = name
+        graph.register(dependent_name + '_ordered', Ordered(window), [dependent_name])

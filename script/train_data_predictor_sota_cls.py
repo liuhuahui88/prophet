@@ -10,7 +10,7 @@ if __name__ == '__main__':
         history_file_path='../data/history',
         commission_rate=0.0)
 
-    suffixes = ['rank', 'rrank', 'ord1']
+    suffixes = ['rank', 'rrank', 'ordered']
     inputs = InputBuilder()\
         .append_all('log_price', suffixes)\
         .append_all('log_price_diff', suffixes)\
