@@ -151,3 +151,19 @@ class Flip(Graph.Function):
 
         df = pd.DataFrame({'Flip': result})
         return df
+
+
+class Pearson(Graph.Function):
+
+    def __init__(self, window, decimals=6):
+        self.window = window
+        self.decimals = decimals
+
+    def compute(self, inputs):
+        line = inputs[0].iloc[:, 0]
+        line2 = inputs[1].iloc[:, 0]
+        corr = line.rolling(self.window, min_periods=1).corr(line2)
+        corr = corr.apply(lambda x: 0 if x > 1 or x < -1 else x)
+        corr = corr.fillna(0).round(self.decimals)
+        df = pd.DataFrame({'Pearson': corr})
+        return df

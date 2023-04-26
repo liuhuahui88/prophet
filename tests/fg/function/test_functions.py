@@ -6,7 +6,7 @@ import pandas as pd
 from prophet.fg.function.aggregator import Aggregator
 from prophet.fg.function.commons import Get, Fill, Merge
 from prophet.fg.function.math import Log, Sign
-from prophet.fg.function.series import Shift, Diff, Keep, Flip, Ordered, Satisfy, RRank
+from prophet.fg.function.series import Shift, Diff, Keep, Flip, Ordered, Satisfy, RRank, Pearson
 from prophet.utils.constant import Const
 from prophet.utils.graph import Graph
 
@@ -112,6 +112,14 @@ class TestFeatureGeneration(TestCase):
 
         actual = Flip().compute([x1, x2])
         expected = pd.DataFrame({'Flip': [0, -1, 1, -1, 0, 1, 0, 0]})
+        self.assert_df_equal(actual, expected)
+
+    def test_pearson(self):
+        x1 = pd.DataFrame({'n': [-1, 0, 1, 0, 0, 1, 1, 0]})
+        x2 = pd.DataFrame({'n': [0, 1, 0, 1, 1, 0, 0, 0]})
+
+        actual = Pearson(3).compute([x1, x2])
+        expected = pd.DataFrame({'Pearson': [0, 1, 0, -1, -1, -1, -1, 0]})
         self.assert_df_equal(actual, expected)
 
     def check(self, f: Graph.Function, x, y):
