@@ -4,6 +4,15 @@ import pandas as pd
 from prophet.utils.graph import Graph
 
 
+class Transform(Graph.Function):
+
+    def __init__(self, func):
+        self.func = func
+
+    def compute(self, inputs):
+        return inputs[0].iloc[:, 0].apply(self.func)
+
+
 class Clip(Graph.Function):
 
     def __init__(self, min_value, max_value):
