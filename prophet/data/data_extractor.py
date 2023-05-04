@@ -53,6 +53,11 @@ class DataExtractor:
 
         graph.register('date', Get('Date'), ['history'])
 
+        graph.register('open', Get('Open'), ['history'])
+        graph.register('high', Get('High'), ['history'])
+        graph.register('low', Get('Low'), ['history'])
+        graph.register('close', Get('Close'), ['history'])
+
         graph.register('price', Get('Close', 'Price'), ['history'])
         graph.register('volume', Get('Volume'), ['history'])
 
