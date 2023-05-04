@@ -18,10 +18,10 @@ class DataPredictor:
     def load(path):
         return DataPredictor(tf.keras.models.load_model(path, compile=False))
 
-    def predict(self, history, data_extractor: DataExtractor):
-        size = len(history)
+    def predict(self, histories, data_extractor: DataExtractor):
+        size = sum([len(history) for history in histories])
 
-        features = data_extractor.extract(history, self.model.input_names)
+        features = data_extractor.extract_and_concat(histories, self.model.input_names)
 
         dataset = tf.data.Dataset.from_tensor_slices(features)
 

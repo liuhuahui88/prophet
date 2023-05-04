@@ -153,12 +153,8 @@ class BackTester:
         indexes = []
         dates = set()
         for history in histories:
-            index = {}
-            for i in range(len(history)):
-                date = history.iloc[i].Date
-                index[date] = i
-                dates.add(date)
-            indexes.append(index)
+            indexes.append(dict(zip(history.Date, range(len(history)))))
+            dates.update(set(history.Date))
         return indexes, sorted(list(dates))
 
     @staticmethod
