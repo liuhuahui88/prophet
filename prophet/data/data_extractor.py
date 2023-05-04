@@ -4,7 +4,7 @@ from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank, Min, Max
 from prophet.fg.function.commons import Get, Merge
 from prophet.fg.function.math import Clip, Log, Indicator
 from prophet.fg.function.oracle import Oracle
-from prophet.fg.function.series import Shift, Diff, Ordered, RRank
+from prophet.fg.function.series import Shift, Diff, Ordered, RRank, Pearson
 from prophet.utils.graph import Graph
 
 
@@ -89,3 +89,9 @@ class DataExtractor:
         graph.register(dependent_name + '_rank', Rank(window), [dependent_name])
         graph.register(dependent_name + '_rrank', RRank(window), [dependent_name])
         graph.register(dependent_name + '_ordered', Ordered(window), [dependent_name])
+
+    @staticmethod
+    def register_target_correlation(graph, feature, target, window):
+        correlation = '{}_{}_corr'.format(feature, target)
+        graph.register(correlation, Pearson(window), [feature, target])
+        graph.register(correlation + '_shift', Shift(1), [correlation])
