@@ -1,6 +1,6 @@
 import pandas as pd
 
-from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank, Min, Max
+from prophet.fg.function.aggregator import Mean, Skew, Std, Kurt, Rank, Min, Max, Spread
 from prophet.fg.function.commons import Get, Merge
 from prophet.fg.function.math import Clip, Log, Indicator
 from prophet.fg.function.oracle import Oracle
@@ -80,6 +80,7 @@ class DataExtractor:
         graph.register(dependent_name + '_kurt', Kurt(window), [dependent_name])
         graph.register(dependent_name + '_min', Min(window), [dependent_name])
         graph.register(dependent_name + '_max', Max(window), [dependent_name])
+        graph.register(dependent_name + '_spread', Spread(window), [dependent_name])
         graph.register(dependent_name + '_rank', Rank(window), [dependent_name])
         graph.register(dependent_name + '_rrank', RRank(window), [dependent_name])
         graph.register(dependent_name + '_ordered', Ordered(window), [dependent_name])
