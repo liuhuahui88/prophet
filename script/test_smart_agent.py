@@ -7,7 +7,7 @@ if __name__ == '__main__':
         history_file_path='../data/history',
         commission_rate=0.0)
 
-    symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300010')
+    symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300200')
     predictors = {
         'TEMP': DataPredictor.load('models/temp'),
         'SOTA_RANK': DataPredictor.load('models/sota_rank'),
@@ -16,10 +16,8 @@ if __name__ == '__main__':
     }
     delta_free_list = ['SOTA_RANK', 'SOTA_REG', 'SOTA_CLS']
 
-    for symbol in symbols:
-        result = play_ground.test_smart_agent(
-            symbol, '2022-01-01', '2023-01-01',
-            predictors, delta_free_list, with_baseline=True)
-
-        result.print()
-        result.plot()
+    result = play_ground.test_smart_agent(
+        symbols, '2022-01-01', '2023-01-01',
+        predictors, delta_free_list, top_k=20, with_baseline=True)
+    result.print()
+    result.plot()

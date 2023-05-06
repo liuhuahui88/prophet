@@ -3,7 +3,6 @@ import datetime
 import numpy as np
 
 from prophet.agent.baseline_agent import BaselineAgent
-from prophet.agent.ensemble_agent import EnsembleAgent
 from prophet.agent.oracle_agent import OracleAgent
 from prophet.agent.smart_agent import SmartAgent
 from prophet.bt.back_tester import BackTester
@@ -34,30 +33,9 @@ class PlayGround:
 
         return predictor
 
-    def test_smart_agent(self, symbol, start_date, end_date,
-                         predictors, delta_free_list=None,
-                         with_baseline=False, with_oracle=False):
-        bt = BackTester(self.storage, Broker(self.commission_rate))
-
-        histories = self.__load_histories([symbol], start_date, end_date)
-
-        for name, predictor in predictors.items():
-            caches = self.__build_caches([symbol], histories, predictor)
-            delta = 0 if delta_free_list is not None and name in delta_free_list else self.log_friction
-            bt.register('SMT_' + name, SmartAgent(symbol, caches[symbol], delta))
-
-        if with_baseline:
-            bt.register('BASE', BaselineAgent())
-        if with_oracle:
-            bt.register('ORA', OracleAgent(symbol, self.storage, self.extractor))
-
-        result = bt.back_test([symbol], start_date, end_date)
-
-        return result
-
-    def test_ensemble_agent(self, symbols, start_date, end_date,
-                            predictors, delta_free_list=None, top_k=1,
-                            with_baseline=False, with_oracle=False):
+    def test_smart_agent(self, symbols, start_date, end_date,
+                         predictors, delta_free_list=None, threshold=0, top_k=1,
+                         with_baseline=False, with_oracle=False, verbose=False):
         bt = BackTester(self.storage, Broker(self.commission_rate))
 
         histories = self.__load_histories(symbols, start_date, end_date)
@@ -65,15 +43,15 @@ class PlayGround:
         for name, predictor in predictors.items():
             caches = self.__build_caches(symbols, histories, predictor)
             delta = 0 if delta_free_list is not None and name in delta_free_list else self.log_friction
-            agents = [SmartAgent(s, caches[s], delta) for s in symbols]
-            bt.register('ENS_' + name, EnsembleAgent(agents, top_k))
+            bt.register('SMT_' + name, SmartAgent(caches, delta, threshold, top_k))
+
         if with_baseline:
             bt.register('BASE', BaselineAgent())
         for symbol in symbols:
             if with_oracle:
                 bt.register('ORA_' + symbol, OracleAgent(symbol, self.storage, self.extractor))
 
-        result = bt.back_test(symbols, start_date, end_date)
+        result = bt.back_test(symbols, start_date, end_date, verbose=verbose)
 
         return result
 

@@ -13,4 +13,4 @@ class Const:
     CENTER = 0
     FUTURE = 1
 
-    WINDOW_SIZE = 30
+    WINDOW_SIZE = 60

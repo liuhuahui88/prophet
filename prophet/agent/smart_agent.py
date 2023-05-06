@@ -1,34 +1,49 @@
 from prophet.agent.abstract_agent import Agent
-from prophet.utils.constant import Const
 
 
 class SmartAgent(Agent):
 
-    def __init__(self, symbol, cache, delta):
-        self.symbol = symbol
-        self.cache = cache
+    def __init__(self, caches, delta, threshold, top_k):
+        self.caches = caches
         self.delta = delta
+        self.threshold = threshold
+        self.top_k = top_k
 
     def handle(self, ctx: Agent.Context):
-        score = self.predict(ctx)
+        symbols, scores, n = self.select_symbols(ctx)
 
-        if score is None:
-            return
+        for symbol in ctx.get_prices().keys():
+            ctx.ask(symbol)
 
-        action = Const.BID if score > 0 else Const.ASK
+        cash = ctx.get_account().get_cash()
+        for symbol in symbols:
+            ctx.bid(symbol, int(cash / n))
 
-        if action == Const.ASK:
-            ctx.ask(self.symbol)
-        else:
-            ctx.bid(self.symbol)
+    def select_symbols(self, ctx: Agent.Context):
+        date = ctx.get_date()
+        account = ctx.get_account()
 
-    def predict(self, ctx: Agent.Context):
-        if ctx.get_date() not in self.cache:
-            return None
+        records = {}
+        for symbol, cache in self.caches.items():
+            if date not in cache:
+                continue
 
-        score = self.cache[ctx.get_date()]
+            score = cache[date]
+            if account.get_volume(symbol) > 0:
+                score += self.delta
 
-        if ctx.get_account().get_volume(self.symbol) != 0:
-            score += self.delta
+            if score <= self.threshold:
+                continue
 
-        return score
+            records[symbol] = score
+
+        symbols = list(records.keys())
+        scores = list(records.values())
+
+        indexes = sorted(range(len(symbols)), key=lambda i: scores[i], reverse=True)
+
+        n = min(self.top_k, len(symbols))
+        best_symbols = [symbols[i] for i in indexes[:n]]
+        best_scores = [scores[i] for i in indexes[:n]]
+
+        return best_symbols, best_scores, n
