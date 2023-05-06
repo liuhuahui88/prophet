@@ -14,9 +14,9 @@ class StockDataSpider:
 
     @staticmethod
     def __transform_symbol(symbol):
-        if symbol[0] == '6':
+        if symbol[0] in ['5', '6']:
             return symbol + ".SS"
-        elif symbol[0] == '3' or symbol[0] == '0':
+        elif symbol[0] in ['0', '1', '3']:
             return symbol + ".SZ"
         else:
             raise ValueError('{0} is an invalid symbol'.format(symbol))
