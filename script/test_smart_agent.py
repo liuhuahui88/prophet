@@ -1,3 +1,4 @@
+from prophet.predictor.sk_predictor import SkPredictor
 from prophet.predictor.tf_predictor import TfPredictor
 from prophet.utils.play_ground import PlayGround
 
@@ -9,7 +10,8 @@ if __name__ == '__main__':
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300200')
     predictors = {
-        'TEMP': TfPredictor.load('models/temp'),
+        'SOTA_PLS': SkPredictor.load('models/sota_pls'),
+        'SOTA_GB': SkPredictor.load('models/sota_gb'),
         'SOTA_RANK': TfPredictor.load('models/sota_rank'),
         'SOTA_REG': TfPredictor.load('models/sota_reg'),
         'SOTA_CLS': TfPredictor.load('models/sota_cls'),
@@ -18,6 +20,6 @@ if __name__ == '__main__':
 
     result = play_ground.test(
         symbols, '2022-01-01', '2023-01-01',
-        predictors, delta_free_list, top_k=20, with_baseline=True)
+        predictors, delta_free_list, top_k=20, with_baseline=True, verbose=True)
     result.print()
     result.plot()
