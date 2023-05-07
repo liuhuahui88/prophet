@@ -1,6 +1,7 @@
 import datetime
 
 import numpy as np
+import pandas as pd
 
 from prophet.agent.baseline_agent import BaselineAgent
 from prophet.agent.oracle_agent import OracleAgent
@@ -8,8 +9,8 @@ from prophet.agent.smart_agent import SmartAgent
 from prophet.bt.back_tester import BackTester
 from prophet.bt.broker import Broker
 from prophet.data.data_extractor import DataExtractor
-from prophet.data.data_predictor import DataPredictor
 from prophet.data.data_storage import StockDataStorage
+from prophet.predictor.abstract_predictor import Predictor
 from prophet.utils.constant import Const
 
 
@@ -23,19 +24,34 @@ class PlayGround:
 
         self.extractor = DataExtractor(commission_rate)
 
-    def train_predictor(self, symbols, start_date, train_end_date, test_end_date,
-                        model, batch_size, epochs, monitor, patience, verbose=False, debug=False):
+    def train(self, symbols, start_date, train_end_date, test_end_date, predictor: Predictor,
+              debug_train=False, debug_test=False):
         histories = self.storage.load_histories(symbols, start_date, test_end_date)
 
-        predictor = DataPredictor(model)
-        predictor.learn(symbols, histories, train_end_date, self.extractor,
-                        batch_size, epochs, monitor, patience, verbose, debug)
+        syms = self.__broadcast_symbols(symbols, histories)
+        dates = self.extractor.extract_and_concat(histories, ['date'])['date']
 
-        return predictor
+        features = self.extractor.extract_and_concat(histories, predictor.get_feature_names())
+        labels = self.extractor.extract_and_concat(histories, predictor.get_label_names())
 
-    def test_smart_agent(self, symbols, start_date, end_date,
-                         predictors, delta_free_list=None, threshold=0, top_k=1,
-                         with_baseline=False, with_oracle=False, verbose=False):
+        train_syms, train_dates, train_sample_set = self.__split_sample_set(
+            syms, dates, features, labels, dates['Date'].apply(lambda d: d < train_end_date))
+        test_syms, test_dates, test_sample_set = self.__split_sample_set(
+            syms, dates, features, labels, dates['Date'].apply(lambda d: d >= train_end_date))
+
+        predictor.fit(train_sample_set, test_sample_set)
+
+        if debug_train:
+            train_results = predictor.predict(train_sample_set)
+            self.__save_samples(train_syms, train_dates, train_sample_set, train_results, 'train')
+
+        if debug_test:
+            test_results = predictor.predict(test_sample_set)
+            self.__save_samples(test_syms, test_dates, test_sample_set, test_results, 'test')
+
+    def test(self, symbols, start_date, end_date,
+             predictors, delta_free_list=None, threshold=0, top_k=1,
+             with_baseline=False, with_oracle=False, verbose=False):
         bt = BackTester(self.storage, Broker(self.commission_rate))
 
         histories = self.__load_histories(symbols, start_date, end_date)
@@ -55,6 +71,31 @@ class PlayGround:
 
         return result
 
+    def __broadcast_symbols(self, symbols, histories):
+        symbols_df_list = []
+        for i in range(len(histories)):
+            if len(histories[i]) != 0:
+                s = [symbols[i]] * len(histories[i])
+                symbols_df = pd.DataFrame({'Symbol': s})
+                symbols_df_list.append(symbols_df)
+        return pd.concat(symbols_df_list).reset_index(drop=True)
+
+    def __split_sample_set(self, syms, dates, features, labels, condition):
+        syms = syms[condition]
+        dates = dates[condition]
+        features = {k: v[condition] for k, v in features.items()}
+        labels = {k: v[condition] for k, v in labels.items()}
+        size = len(dates)
+        return syms, dates, Predictor.SampleSet(features, labels, size)
+
+    def __save_samples(self, syms, dates, sample_set, results, prefix):
+        values = [syms, dates] + \
+                 list(sample_set.features.values()) + \
+                 list(sample_set.labels.values()) + \
+                 list(results.values())
+        samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
+        samples.to_csv('csvs/{}_samples.csv'.format(prefix), index=False)
+
     def __load_histories(self, symbols, start_date, end_date):
         start_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d')
         offset = datetime.timedelta(days=Const.WINDOW_SIZE)
@@ -64,7 +105,11 @@ class PlayGround:
         return histories
 
     def __build_caches(self, symbols, histories, predictor):
-        results = predictor.predict(histories, self.extractor)
+        size = sum([len(history) for history in histories])
+        features = self.extractor.extract_and_concat(histories, predictor.get_feature_names())
+        sample_set = Predictor.SampleSet(features, None, size)
+
+        results = predictor.predict(sample_set)
         scores = list(results.values())[0].iloc[:, 0]
 
         caches = {}

@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from prophet.predictor.tf_predictor import TfPredictor
 from prophet.utils.input_builder import InputBuilder
 from prophet.utils.metric import Metric
 from prophet.utils.play_ground import PlayGround
@@ -32,12 +33,14 @@ if __name__ == '__main__':
 
     model = tf.keras.models.Model(inputs=inputs, outputs=x)
 
-    model.compile(optimizer='adam', loss='mse', metrics=[Metric.me, Metric.r2])
+    model.compile(optimizer='adam',
+                  loss=Metric.soft_rank,
+                  metrics=[Metric.me, Metric.hard_rank])
+
+    predictor = TfPredictor(model, 1000, 1000, 'val_loss', 3, verbose=True)
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 
-    predictor = play_ground.train_predictor(
-        symbols, '2010-01-01', '2021-01-01', '2022-01-01',
-        model, 1000, 1000, 'val_loss', 3, verbose=True)
+    play_ground.train(symbols, '2010-01-01', '2021-01-01', '2022-01-01', predictor)
 
-    predictor.save('models/temp_reg')
+    predictor.save('models/temp_rank')
