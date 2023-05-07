@@ -58,7 +58,7 @@ class DataPredictor:
                 s = [symbols[i]] * len(histories[i])
                 symbols_df = pd.DataFrame({'Symbol': s})
                 symbols_df_list.append(symbols_df)
-        return pd.concat(symbols_df_list)
+        return pd.concat(symbols_df_list).reset_index(drop=True)
 
     def __create_dataset(self, syms, dates, features, labels, condition):
         syms = syms[condition]
