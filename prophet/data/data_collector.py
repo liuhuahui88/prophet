@@ -5,16 +5,17 @@ from prophet.agent.abstract_agent import Agent
 
 class DataCollector:
 
-    def __init__(self, symbol):
-        self.symbol = symbol
-        self.history = pd.DataFrame(columns=['Close', 'Volume'])
+    def __init__(self):
+        self.prices = {}
 
     def feed(self, ctx: Agent.Context):
-        data = dict()
-        data['Close'] = ctx.get_prices()[self.symbol]
-        data['Volume'] = ctx.get_volumes()[self.symbol]
-        record = pd.DataFrame(data, index=[len(self.history)])
-        self.history = pd.concat([self.history, record])
+        for s in ctx.get_prices():
+            if s not in self.prices:
+                self.prices[s] = []
+            self.prices[s].append(ctx.get_prices()[s])
 
-    def get(self):
-        return self.history
+    def get(self, n=0):
+        if n == 0:
+            return {s: pd.DataFrame(dict(Close=p)) for s, p in self.prices.items()}
+        else:
+            return {s: pd.DataFrame(dict(Close=p[-n:])) for s, p in self.prices.items()}
