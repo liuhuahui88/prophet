@@ -4,17 +4,16 @@ import pickle
 
 import pandas as pd
 import numpy as np
-from sklearn.cross_decomposition import PLSRegression
 
 from prophet.predictor.abstract_predictor import Predictor
 
 
-class PlsPredictor(Predictor):
+class SkPredictor(Predictor):
 
-    def __init__(self, feature_names, label_names, components):
+    def __init__(self, feature_names, label_names, model):
         self.feature_names = feature_names
         self.label_names = label_names
-        self.model = PLSRegression(components)
+        self.model = model
 
     def get_feature_names(self):
         return self.feature_names

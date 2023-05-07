@@ -1,4 +1,5 @@
-from prophet.predictor.pls_predictor import PlsPredictor
+from prophet.predictor.sk_predictor import SkPredictor
+from sklearn.cross_decomposition import PLSRegression
 from prophet.utils.play_ground import PlayGround
 
 if __name__ == '__main__':
@@ -12,7 +13,7 @@ if __name__ == '__main__':
     suffixes = ['rank', 'rrank', 'ordered', 'mean', 'std', 'skew', 'kurt', 'max', 'min', 'spread']
     feature_names = [p + '_' + s for p in prefixes for s in suffixes]
 
-    predictor = PlsPredictor(feature_names, ['next_log_price_diff'], 10)
+    predictor = SkPredictor(feature_names, ['next_log_price_diff'], PLSRegression(10))
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 
