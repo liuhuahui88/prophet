@@ -4,6 +4,10 @@ import tensorflow as tf
 class Metric:
 
     @staticmethod
+    def dummy(y_true, y_pred):
+        return tf.reduce_mean(y_pred)
+
+    @staticmethod
     def soft_rank(y_true, y_pred):
         y_true_res_mat = tf.reshape(y_true, [-1, 1]) - tf.reshape(y_true, [1, -1])
         y_pred_res_mat = tf.reshape(y_pred, [-1, 1]) - tf.reshape(y_pred, [1, -1])
