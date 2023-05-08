@@ -5,7 +5,8 @@ class Predictor(ABC):
 
     class SampleSet:
 
-        def __init__(self, features, labels, size):
+        def __init__(self, ids, features, labels, size):
+            self.ids = ids
             self.features = features
             self.labels = labels
             self.size = size

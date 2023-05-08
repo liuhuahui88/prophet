@@ -27,27 +27,19 @@ class PlayGround:
     def train(self, symbols, start_date, train_end_date, test_end_date, predictor: Predictor,
               debug_train=False, debug_test=False):
         histories = self.storage.load_histories(symbols, start_date, test_end_date)
-
-        syms = self.__broadcast_symbols(symbols, histories)
-        dates = self.extractor.extract_and_concat(histories, ['date'])['date']
-
-        features = self.extractor.extract_and_concat(histories, predictor.get_feature_names())
-        labels = self.extractor.extract_and_concat(histories, predictor.get_label_names())
-
-        train_syms, train_dates, train_sample_set = self.__split_sample_set(
-            syms, dates, features, labels, dates['Date'].apply(lambda d: d < train_end_date))
-        test_syms, test_dates, test_sample_set = self.__split_sample_set(
-            syms, dates, features, labels, dates['Date'].apply(lambda d: d >= train_end_date))
+        sample_set = self.__create_sample_set(symbols, histories, predictor)
+        train_sample_set = self.__split_sample_set(sample_set, sample_set.ids['date']['Date'] < train_end_date)
+        test_sample_set = self.__split_sample_set(sample_set, sample_set.ids['date']['Date'] >= train_end_date)
 
         predictor.fit(train_sample_set, test_sample_set)
 
         if debug_train:
             train_results = predictor.predict(train_sample_set)
-            self.__save_samples(train_syms, train_dates, train_sample_set, train_results, 'train')
+            self.__save_debug_info(train_sample_set, train_results, 'train')
 
         if debug_test:
             test_results = predictor.predict(test_sample_set)
-            self.__save_samples(test_syms, test_dates, test_sample_set, test_results, 'test')
+            self.__save_debug_info(test_sample_set, test_results, 'test')
 
     def test(self, symbols, start_date, end_date,
              predictors, delta_free_list=None, threshold=0, top_k=1,
@@ -71,6 +63,16 @@ class PlayGround:
 
         return result
 
+    def __create_sample_set(self, symbols, histories, predictor):
+        syms = self.__broadcast_symbols(symbols, histories)
+        dates = self.extractor.extract_and_concat(histories, ['date'])['date']
+
+        ids = dict(sym=syms, date=dates)
+        features = self.extractor.extract_and_concat(histories, predictor.get_feature_names())
+        labels = self.extractor.extract_and_concat(histories, predictor.get_label_names())
+
+        return Predictor.SampleSet(ids, features, labels, sum([len(h) for h in histories]))
+
     def __broadcast_symbols(self, symbols, histories):
         symbols_df_list = []
         for i in range(len(histories)):
@@ -80,16 +82,14 @@ class PlayGround:
                 symbols_df_list.append(symbols_df)
         return pd.concat(symbols_df_list).reset_index(drop=True)
 
-    def __split_sample_set(self, syms, dates, features, labels, condition):
-        syms = syms[condition]
-        dates = dates[condition]
-        features = {k: v[condition] for k, v in features.items()}
-        labels = {k: v[condition] for k, v in labels.items()}
-        size = len(dates)
-        return syms, dates, Predictor.SampleSet(features, labels, size)
+    def __split_sample_set(self, sample_set, condition):
+        ids = {k: v[condition] for k, v in sample_set.ids.items()}
+        features = {k: v[condition] for k, v in sample_set.features.items()}
+        labels = {k: v[condition] for k, v in sample_set.labels.items()}
+        return Predictor.SampleSet(ids, features, labels, condition.sum())
 
-    def __save_samples(self, syms, dates, sample_set, results, prefix):
-        values = [syms, dates] + \
+    def __save_debug_info(self, sample_set, results, prefix):
+        values = list(sample_set.ids.values()) + \
                  list(sample_set.features.values()) + \
                  list(sample_set.labels.values()) + \
                  list(results.values())
