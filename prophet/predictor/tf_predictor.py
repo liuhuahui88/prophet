@@ -46,7 +46,7 @@ class TfPredictor(Predictor):
 
         results = {}
         for i, name in enumerate(self.model.output_names):
-            results[name] = pd.DataFrame({'Prediction': predictions[i].ravel()})
+            results[name] = pd.DataFrame(predictions[i])
         return results
 
     def save(self, path):
