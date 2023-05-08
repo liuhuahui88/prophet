@@ -58,5 +58,5 @@ class TfPredictor(Predictor):
 
     @staticmethod
     def __create_dataset(sample_set, batch_size):
-        return tf.data.Dataset.from_tensor_slices((sample_set.features, sample_set.labels))\
-            .cache().shuffle(sample_set.size, reshuffle_each_iteration=True).batch(batch_size)
+        return tf.data.Dataset.from_tensor_slices((sample_set.features, sample_set.labels)).cache()\
+            .shuffle(sample_set.size, reshuffle_each_iteration=True).batch(batch_size, drop_remainder=True)
