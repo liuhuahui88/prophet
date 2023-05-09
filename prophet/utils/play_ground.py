@@ -25,7 +25,7 @@ class PlayGround:
         self.extractor = DataExtractor(commission_rate)
 
     def train(self, symbols, start_date, train_end_date, test_end_date, predictor: Predictor,
-              debug_train=False, debug_test=False):
+              debug_train=False, debug_test=False, debug_features=False):
         histories = self.storage.load_histories(symbols, start_date, test_end_date)
         sample_set = self.__create_sample_set(symbols, histories, predictor)
         train_sample_set = self.__split_sample_set(sample_set, sample_set.ids['date']['Date'] < train_end_date)
@@ -35,11 +35,11 @@ class PlayGround:
 
         if debug_train:
             train_results = predictor.predict(train_sample_set)
-            self.__save_debug_info(train_sample_set, train_results, 'train')
+            self.__save_debug_info(train_sample_set, train_results, debug_features, 'train')
 
         if debug_test:
             test_results = predictor.predict(test_sample_set)
-            self.__save_debug_info(test_sample_set, test_results, 'test')
+            self.__save_debug_info(test_sample_set, test_results, debug_features, 'test')
 
     def test(self, symbols, start_date, end_date,
              predictors, delta_free_list=None, threshold=0, top_k=1,
@@ -88,9 +88,9 @@ class PlayGround:
         labels = {k: v[condition] for k, v in sample_set.labels.items()}
         return Predictor.SampleSet(ids, features, labels, condition.sum())
 
-    def __save_debug_info(self, sample_set, results, prefix):
+    def __save_debug_info(self, sample_set, results, debug_features, prefix):
         values = list(sample_set.ids.values()) + \
-                 list(sample_set.features.values()) + \
+                 list(sample_set.features.values() if debug_features else []) + \
                  list(sample_set.labels.values()) + \
                  list(results.values())
         samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
