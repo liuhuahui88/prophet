@@ -8,12 +8,14 @@ from prophet.predictor.abstract_predictor import Predictor
 
 class TfPredictor(Predictor):
 
-    def __init__(self, model, batch_size=None, epochs=None, monitor=None, patience=None, verbose=None):
+    def __init__(self, model, batch_size=None, epochs=None, monitor=None, patience=None,
+                 enables_evaluation=False, verbose=None):
         self.model = model
         self.batch_size = batch_size
         self.epochs = epochs
         self.monitor = monitor
         self.patience = patience
+        self.enables_evaluation = enables_evaluation
         self.verbose = verbose
 
     def get_feature_names(self):
@@ -36,6 +38,10 @@ class TfPredictor(Predictor):
 
         self.model.fit(train_dataset, epochs=self.epochs, validation_data=test_dataset, verbose=self.verbose,
                        callbacks=[tensor_board_callback, early_stopping_callback])
+
+        if self.enables_evaluation:
+            self.model.evaluate(train_dataset)
+            self.model.evaluate(test_dataset)
 
     def predict(self, sample_set: Predictor.SampleSet):
         dataset = tf.data.Dataset.from_tensor_slices(sample_set.features).batch(sample_set.size)
