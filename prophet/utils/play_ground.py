@@ -107,7 +107,7 @@ class PlayGround:
     def __build_caches(self, symbols, histories, predictor):
         size = sum([len(history) for history in histories])
         features = self.extractor.extract_and_concat(histories, predictor.get_feature_names())
-        sample_set = Predictor.SampleSet(features, None, size)
+        sample_set = Predictor.SampleSet(None, features, None, size)
 
         results = predictor.predict(sample_set)
         scores = list(results.values())[0].iloc[:, 0]
