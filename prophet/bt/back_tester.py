@@ -23,16 +23,15 @@ class BackTester:
 
     def back_test(self, symbols, start_date=None, end_date=None, verbose=False):
         names = [self.storage.get_name(symbol) for symbol in symbols]
-        histories = self.storage.load_histories(symbols, start_date, end_date)
+        histories = self.storage.load_histories(symbols, start_date, end_date, True)
 
         cases = [BackTester.TestCase(name, self.agents[name], self.broker, self.init_cash) for name in self.agents]
 
-        indexes, dates = BackTester.__build_indexes(histories)
-        for date in dates:
+        for i, date in enumerate(self.__collect_date(histories)):
             if verbose:
                 print('Testing {}'.format(date))
 
-            prices, volumes, liquidities = BackTester.__transform_data(symbols, histories, indexes, date)
+            prices, volumes, liquidities = BackTester.__transform_data(symbols, histories, i)
 
             for case in cases:
                 case.handle(date, prices, volumes, liquidities)
@@ -149,25 +148,22 @@ class BackTester:
                 self.__broker.trade(self.__account, symbol, -volume, cash)
 
     @staticmethod
-    def __build_indexes(histories):
-        indexes = []
-        dates = set()
+    def __collect_date(histories):
+        assert len(histories) != 0
+
+        size = len(histories[0])
         for history in histories:
-            indexes.append(dict(zip(history.Date, range(len(history)))))
-            dates.update(set(history.Date))
-        return indexes, sorted(list(dates))
+            assert len(history) == size
+
+        return list(histories[0].Date)
 
     @staticmethod
-    def __transform_data(symbols, histories, indexes, date):
+    def __transform_data(symbols, histories, idx):
         prices = {}
         volumes = {}
         liquidities = {}
 
         for i in range(len(symbols)):
-            if date not in indexes[i]:
-                continue
-            idx = indexes[i][date]
-
             prices[symbols[i]] = histories[i].iloc[idx].Close
             volumes[symbols[i]] = histories[i].iloc[idx].Volume * 1.0
             liquidities[symbols[i]] = BackTester.__create_liquidities(symbols[i], histories[i], idx)
@@ -176,8 +172,11 @@ class BackTester:
 
     @staticmethod
     def __create_liquidities(symbol, history, idx):
+        has_volume = history.iloc[idx].Volume > 0
+
         diff = math.log(history.iloc[idx].Close / history.iloc[idx - 1].Close) if idx != 0 else 0
         threshold = math.log(1.19 if symbol[0] == '3' else 1.09) if idx != 0 else 0
         has_ask = diff < threshold
         has_bid = diff > -threshold
-        return Liquidity(history.iloc[idx].Close, 0, has_ask, has_bid)
+
+        return Liquidity(history.iloc[idx].Close, 0, has_ask and has_volume, has_bid and has_volume)

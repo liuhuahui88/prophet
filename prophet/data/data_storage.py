@@ -24,8 +24,31 @@ class StockDataStorage:
         history = history.reset_index(drop=True)
         return history
 
-    def load_histories(self, symbols, start_date=None, end_date=None):
-        return [self.load_history(symbol, start_date, end_date) for symbol in symbols]
+    def load_histories(self, symbols, start_date=None, end_date=None, expands=False):
+        histories = [self.load_history(symbol, start_date, end_date) for symbol in symbols]
+
+        if not expands:
+            return histories
+
+        date_set = set()
+        [date_set.update(h.Date) for h in histories]
+        date_df = pd.DataFrame(dict(Date=sorted(list(date_set))))
+
+        expanded_histories = []
+        for history in histories:
+            if len(history) == 0:
+                expanded_histories.append(history)
+                continue
+
+            expanded_history = date_df.merge(history, how='left', on='Date')
+            expanded_history.Open.fillna(method='ffill', inplace=True)
+            expanded_history.High.fillna(method='ffill', inplace=True)
+            expanded_history.Low.fillna(method='ffill', inplace=True)
+            expanded_history.Close.fillna(method='ffill', inplace=True)
+            expanded_history.Volume.fillna(0, inplace=True)
+            expanded_histories.append(expanded_history)
+
+        return expanded_histories
 
     def save_history(self, symbol, history_df):
         history_df.to_csv(self.__format_path(symbol), index=False)
