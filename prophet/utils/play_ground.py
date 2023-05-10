@@ -26,10 +26,10 @@ class PlayGround:
 
     def train(self, symbols, start_date, train_end_date, test_end_date, predictor: Predictor,
               debug_train=False, debug_test=False, debug_features=False):
-        histories = self.storage.load_histories(symbols, start_date, test_end_date)
+        histories = self.__load_histories(symbols, start_date, test_end_date)
         sample_set = self.__create_sample_set(symbols, histories, predictor)
-        train_sample_set = self.__split_sample_set(sample_set, sample_set.ids['date']['Date'] < train_end_date)
-        test_sample_set = self.__split_sample_set(sample_set, sample_set.ids['date']['Date'] >= train_end_date)
+        train_sample_set = self.__split_sample_set(sample_set, sample_set.ids['date'] < train_end_date)
+        test_sample_set = self.__split_sample_set(sample_set, sample_set.ids['date'] >= train_end_date)
 
         predictor.fit(train_sample_set, test_sample_set)
 
@@ -46,7 +46,7 @@ class PlayGround:
              with_baseline=False, with_oracle=False, verbose=False):
         bt = BackTester(self.storage, Broker(self.commission_rate))
 
-        histories = self.__load_histories(symbols, start_date, end_date)
+        histories = self.__load_histories(symbols, start_date, end_date, Const.WINDOW_SIZE)
 
         for name, predictor in predictors.items():
             caches = self.__build_caches(symbols, histories, predictor)
@@ -65,7 +65,7 @@ class PlayGround:
 
     def __create_sample_set(self, symbols, histories, predictor):
         syms = self.__broadcast_symbols(symbols, histories)
-        dates = self.extractor.extract_and_concat(histories, ['date'])['date']
+        dates = self.extractor.extract_and_concat(histories, ['date'])['date'].iloc[:, 0]
 
         ids = dict(sym=syms, date=dates)
         features = self.extractor.extract_and_concat(histories, predictor.get_feature_names())
@@ -96,9 +96,9 @@ class PlayGround:
         samples = pd.concat([value.reset_index(drop=True) for value in values], axis=1)
         samples.to_csv('csvs/{}_samples.csv'.format(prefix), index=False)
 
-    def __load_histories(self, symbols, start_date, end_date):
+    def __load_histories(self, symbols, start_date, end_date, offset=0):
         start_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        offset = datetime.timedelta(days=Const.WINDOW_SIZE)
+        offset = datetime.timedelta(days=offset)
         approx_start_datetime = start_datetime - offset
         approx_start_date = approx_start_datetime.strftime('%Y-%m-%d')
         histories = self.storage.load_histories(symbols, approx_start_date, end_date)
