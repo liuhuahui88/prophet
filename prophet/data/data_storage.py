@@ -41,11 +41,19 @@ class StockDataStorage:
                 continue
 
             expanded_history = date_df.merge(history, how='left', on='Date')
+
             expanded_history.Open.fillna(method='ffill', inplace=True)
             expanded_history.High.fillna(method='ffill', inplace=True)
             expanded_history.Low.fillna(method='ffill', inplace=True)
             expanded_history.Close.fillna(method='ffill', inplace=True)
+
+            expanded_history.Open.fillna(method='bfill', inplace=True)
+            expanded_history.High.fillna(method='bfill', inplace=True)
+            expanded_history.Low.fillna(method='bfill', inplace=True)
+            expanded_history.Close.fillna(method='bfill', inplace=True)
+
             expanded_history.Volume.fillna(0, inplace=True)
+
             expanded_histories.append(expanded_history)
 
         return expanded_histories
