@@ -7,6 +7,8 @@ if __name__ == '__main__':
 
     validator = StockDataValidator('2010-01-01')
 
+    symbol_black_set = set()
+
     for symbol in storage.get_symbols():
         name = storage.get_name(symbol)
         history = storage.load_history(symbol)
@@ -15,3 +17,6 @@ if __name__ == '__main__':
             invalid_results = summary[description]
             for r in invalid_results:
                 print([symbol, name], description, r)
+                symbol_black_set.add(symbol)
+
+    print(list(symbol_black_set))
