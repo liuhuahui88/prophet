@@ -1,6 +1,8 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from prophet.utils.operator import Operator
+
 
 class Metric:
 
@@ -24,21 +26,20 @@ class Metric:
     @staticmethod
     def entropy(y_true, y_pred):
         distribution = tf.nn.softmax(y_pred)
-        entropy = tf.reduce_sum(-distribution * tf.math.log(distribution), axis=-1)
-        entropy_norm = tf.math.log(1.0 * distribution.shape[-1])
-        return entropy / entropy_norm
+        entropy = Operator.entropy(distribution) / tf.math.log(1.0 * 170)
+        return entropy
 
     @staticmethod
     def soft_rank(y_true, y_pred):
         y_true_res_mat = tf.reshape(y_true, [-1, 1]) - tf.reshape(y_true, [1, -1])
         y_pred_res_mat = tf.reshape(y_pred, [-1, 1]) - tf.reshape(y_pred, [1, -1])
-        return tf.reduce_mean(tf.sigmoid(-y_pred_res_mat * tf.sign(y_true_res_mat)))
+        return tf.reduce_mean(Operator.soft_indicator(-y_pred_res_mat * tf.sign(y_true_res_mat)))
 
     @staticmethod
     def hard_rank(y_true, y_pred):
         y_true_res_mat = tf.reshape(y_true, [-1, 1]) - tf.reshape(y_true, [1, -1])
         y_pred_res_mat = tf.reshape(y_pred, [-1, 1]) - tf.reshape(y_pred, [1, -1])
-        return tf.reduce_mean((tf.sign(-y_pred_res_mat * tf.sign(y_true_res_mat)) + 1) / 2)
+        return tf.reduce_mean(Operator.hard_indicator(-y_pred_res_mat * tf.sign(y_true_res_mat)))
 
     @staticmethod
     def me(y_true, y_pred):
@@ -65,33 +66,14 @@ class Metric:
 
     @staticmethod
     def create_hard_advt(delta):
-        def hard(tensor):
-            return (tf.sign(tensor) + 1) / 2
-
         def hard_advt(y_true, y_pred):
-            return Metric.pair_wise_advt(y_true, y_pred, delta, hard)
+            return Metric.pair_wise_advt(y_true, y_pred, delta, Operator.hard_indicator)
 
         return hard_advt
 
     @staticmethod
-    def create_hinge_advt(delta):
-        def hinge(tensor):
-            width = delta / 2
-            margin_pct = 0.1
-            margin = width * margin_pct
-            return tf.keras.activations.relu(tensor + margin)
-
-        def hinge_advt(y_true, y_pred):
-            return Metric.pair_wise_advt(y_true, y_pred, delta, hinge)
-
-        return hinge_advt
-
-    @staticmethod
     def create_soft_advt(delta):
-        def soft(tensor):
-            return tf.keras.activations.sigmoid(tensor)
-
         def soft_advt(y_true, y_pred):
-            return Metric.pair_wise_advt(y_true, y_pred, delta, soft)
+            return Metric.pair_wise_advt(y_true, y_pred, delta, Operator.soft_indicator)
 
         return soft_advt

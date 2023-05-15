@@ -29,7 +29,6 @@ if __name__ == '__main__':
     model.compile(optimizer='adam',
                   loss={'oracle_empty_advantage': 'mse'},
                   metrics=[Metric.create_hard_advt(play_ground.log_friction),
-                           Metric.create_hinge_advt(play_ground.log_friction),
                            Metric.create_soft_advt(play_ground.log_friction),
                            Metric.me, Metric.r2])
 
