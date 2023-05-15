@@ -42,7 +42,7 @@ class PlayGround:
             self.__save_debug_info(test_sample_set, test_results, debug_features, 'test')
 
     def test(self, symbols, start_date, end_date, predictors, axis,
-             delta_free_list=None, threshold=0, top_k=1,
+             delta_free_list=None, global_threshold=0, local_threshold=0, top_k=1, weighted=False,
              with_baseline=False, with_oracle=False, verbose=False):
         bt = BackTester(self.storage, Broker(self.commission_rate))
         histories = self.__load_histories(symbols, start_date, end_date, axis == 1, Const.WINDOW_SIZE)
@@ -50,7 +50,7 @@ class PlayGround:
         for name, predictor in predictors.items():
             caches = self.__build_caches(symbols, histories, predictor, axis)
             delta = 0 if delta_free_list is not None and name in delta_free_list else self.log_friction
-            bt.register('SMT_' + name, SmartAgent(caches, delta, threshold, top_k))
+            bt.register('SMT_' + name, SmartAgent(caches, delta, global_threshold, local_threshold, top_k, weighted))
 
         if with_baseline:
             bt.register('BASE', BaselineAgent())
