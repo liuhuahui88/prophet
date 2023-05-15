@@ -21,6 +21,6 @@ if __name__ == '__main__':
     result = play_ground.test(
         symbols, '2022-01-01', '2023-01-01', predictors, 0, delta_free_list,
         global_threshold=-10000, local_threshold=-10000, top_k=20, weighted=False,
-        with_baseline=True, verbose=True)
+        with_baseline=True, verbose_bt=True, verbose_agent=False)
     result.print()
     result.plot()

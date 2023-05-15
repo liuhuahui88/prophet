@@ -43,14 +43,15 @@ class PlayGround:
 
     def test(self, symbols, start_date, end_date, predictors, axis,
              delta_free_list=None, global_threshold=0, local_threshold=0, top_k=1, weighted=False,
-             with_baseline=False, with_oracle=False, verbose=False):
+             with_baseline=False, with_oracle=False, verbose_bt=False, verbose_agent=False):
         bt = BackTester(self.storage, Broker(self.commission_rate))
         histories = self.__load_histories(symbols, start_date, end_date, axis == 1, Const.WINDOW_SIZE)
 
         for name, predictor in predictors.items():
             caches = self.__build_caches(symbols, histories, predictor, axis)
             delta = 0 if delta_free_list is not None and name in delta_free_list else self.log_friction
-            bt.register('SMT_' + name, SmartAgent(caches, delta, global_threshold, local_threshold, top_k, weighted))
+            agent = SmartAgent(caches, delta, global_threshold, local_threshold, top_k, weighted, verbose_agent)
+            bt.register('SMT_' + name, agent)
 
         if with_baseline:
             bt.register('BASE', BaselineAgent())
@@ -58,7 +59,7 @@ class PlayGround:
             if with_oracle:
                 bt.register('ORA_' + symbol, OracleAgent(symbol, self.storage, self.extractor))
 
-        result = bt.back_test(symbols, start_date, end_date, verbose=verbose)
+        result = bt.back_test(symbols, start_date, end_date, verbose=verbose_bt)
 
         return result
 

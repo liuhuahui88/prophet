@@ -6,13 +6,14 @@ from prophet.agent.abstract_agent import Agent
 
 class SmartAgent(Agent):
 
-    def __init__(self, caches, delta, global_threshold, local_threshold, top_k, weighted):
+    def __init__(self, caches, delta, global_threshold, local_threshold, top_k, weighted, verbose):
         self.caches = caches
         self.delta = delta
         self.global_threshold = global_threshold
         self.local_threshold = local_threshold
         self.top_k = top_k
         self.weighted = weighted
+        self.verbose = verbose
 
     def handle(self, ctx: Agent.Context):
         scores = self.collect_score(ctx)
@@ -25,6 +26,9 @@ class SmartAgent(Agent):
         cash = ctx.get_account().get_cash()
         for symbol, weight in portfolio.items():
             ctx.bid(symbol, int(cash * weight))
+
+        if self.verbose:
+            print(ctx.get_date(), portfolio)
 
     def collect_score(self, ctx: Agent.Context):
         date = ctx.get_date()
