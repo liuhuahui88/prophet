@@ -40,6 +40,6 @@ if __name__ == '__main__':
 
     symbols = play_ground.storage.get_symbols(lambda s: s[0] == '3' and s <= '300800')
 
-    play_ground.train(symbols, '2010-01-01', '2021-01-01', '2022-01-01', predictor)
+    play_ground.train(symbols, '2010-01-01', '2021-01-01', '2022-01-01', predictor, 0)
 
     predictor.save('models/temp_cls')

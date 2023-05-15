@@ -38,13 +38,13 @@ if __name__ == '__main__':
     symbol = '600000'
     symbols = [symbol]
 
-    play_ground.train(symbols, '2010-01-01', '2010-12-01', '2011-01-01', predictor)
+    play_ground.train(symbols, '2010-01-01', '2010-12-01', '2011-01-01', predictor, 0)
 
     predictor.save('models/example')
 
     result = play_ground.test(
         symbols, '2010-07-01', '2011-01-01',
-        {'EXAMPLE': predictor}, with_baseline=True, with_oracle=True)
+        {'EXAMPLE': predictor}, 0, with_baseline=True, with_oracle=True)
 
     result.print()
     result.plot()

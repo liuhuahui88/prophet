@@ -16,10 +16,16 @@ class DataExtractor:
     def extract(self, history: pd.DataFrame, names):
         return self.graph.compute(names, {'history': history})
 
-    def extract_and_concat(self, histories, names):
+    def extract_and_concat(self, histories, names, axis=0):
         histories = [history for history in histories if len(history) != 0]
         datas = [self.extract(history, names) for history in histories]
-        return {name: pd.concat([data[name] for data in datas]).reset_index(drop=True) for name in names}
+        results = {name: pd.concat([data[name] for data in datas], axis=axis) for name in names}
+        if axis == 0:
+            return {name: results[name].reset_index(drop=True) for name in results}
+        elif axis == 1:
+            return {name: results[name].sort_index() for name in results}
+        else:
+            raise ValueError('invalid axis {}'.format(axis))
 
     @staticmethod
     def create_graph(commission_rate):
