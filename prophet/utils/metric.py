@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 
 class Metric:
@@ -6,6 +7,26 @@ class Metric:
     @staticmethod
     def dummy(y_true, y_pred):
         return tf.reduce_mean(y_pred)
+
+    @staticmethod
+    def strategy_soft(y_true, y_pred):
+        distribution = tf.nn.softmax(y_pred)
+        reward = tf.math.log(tf.reduce_sum(tf.exp(y_true) * distribution, axis=-1))
+        return -reward
+
+    @staticmethod
+    def strategy_hard(y_true, y_pred):
+        pct = tfp.stats.percentile(y_pred, 90, axis=-1, keepdims=True)
+        distribution = tf.nn.softmax(tf.minimum(y_pred, pct) * 100000000)
+        reward = tf.math.log(tf.reduce_sum(tf.exp(y_true) * distribution, axis=-1))
+        return -reward
+
+    @staticmethod
+    def entropy(y_true, y_pred):
+        distribution = tf.nn.softmax(y_pred)
+        entropy = tf.reduce_sum(-distribution * tf.math.log(distribution), axis=-1)
+        entropy_norm = tf.math.log(1.0 * distribution.shape[-1])
+        return entropy / entropy_norm
 
     @staticmethod
     def soft_rank(y_true, y_pred):
