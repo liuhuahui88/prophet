@@ -32,7 +32,7 @@ class Metric:
     @staticmethod
     def entropy(y_true, y_pred):
         distribution = tf.nn.softmax(y_pred)
-        entropy = Operator.entropy(distribution) / tf.math.log(1.0 * 170)
+        entropy = Operator.entropy(distribution) / tf.math.log(1.0 * y_pred.shape[-1])
         return entropy
 
     @staticmethod
