@@ -13,6 +13,19 @@ class Operator:
         return tf.keras.activations.sigmoid(tensor)
 
     @staticmethod
+    def rank(tensor):
+        tensor = tf.expand_dims(tensor, axis=-1)
+        dims = len(tensor.shape)
+        permutation = list(range(dims - 2)) + [dims - 1, dims - 2]
+        rank = tf.sign(tensor - tf.transpose(tensor, permutation))
+        return tf.reduce_mean(rank, axis=-1)
+
+    @staticmethod
+    def risk(distribution, covariance=0, axis=-1, keepdims=False):
+        r = tf.math.reduce_sum(tf.square(distribution), axis=axis, keepdims=keepdims)
+        return tf.sqrt(r * (1 - covariance) + covariance)
+
+    @staticmethod
     def entropy(distribution, axis=-1, keepdims=False):
         return tf.reduce_sum(-distribution * tf.math.log(distribution), axis=axis, keepdims=keepdims)
 
