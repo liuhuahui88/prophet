@@ -14,20 +14,23 @@ class Metric:
     def strategy_soft(y_true, y_pred):
         distribution = tf.nn.softmax(y_pred)
         reward = tf.math.log(tf.reduce_sum(tf.exp(y_true) * distribution, axis=-1))
-        return -reward
+        base = tf.math.log(tf.reduce_mean(tf.exp(y_true), axis=-1))
+        return -(reward - base)
 
     @staticmethod
     def strategy_top(y_true, y_pred):
         pct = tfp.stats.percentile(y_pred, 90, axis=-1, keepdims=True)
         distribution = tf.nn.softmax(tf.minimum(y_pred, pct) * 100000000)
         reward = tf.math.log(tf.reduce_sum(tf.exp(y_true) * distribution, axis=-1))
-        return -reward
+        base = tf.math.log(tf.reduce_mean(tf.exp(y_true), axis=-1))
+        return -(reward - base)
 
     @staticmethod
     def strategy_hard(y_true, y_pred):
         distribution = tf.nn.softmax(y_pred * 100000000)
         reward = tf.math.log(tf.reduce_sum(tf.exp(y_true) * distribution, axis=-1))
-        return -reward
+        base = tf.math.log(tf.reduce_mean(tf.exp(y_true), axis=-1))
+        return -(reward - base)
 
     @staticmethod
     def entropy(y_true, y_pred):
